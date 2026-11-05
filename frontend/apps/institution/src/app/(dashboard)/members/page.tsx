@@ -13,6 +13,7 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
+import { ViewableAvatar } from "@/components/institution/viewable-avatar";
 import { Card, CardContent } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
@@ -441,7 +442,8 @@ export default function AdminMembersPage() {
                 <TableRow key={m.id} className={densityRowClass}>
                   <TableCell className={densityCellClass}>
                     <div className="flex items-center gap-3">
-                      <UserAvatar
+                      <ViewableAvatar
+                        caption={m.email}
                         src={m.profilePictureUrl}
                         name={`${m.firstName} ${m.lastName}`}
                         size="sm"
@@ -531,7 +533,7 @@ export default function AdminMembersPage() {
             ) : members.map((m) => (
               <div key={m.id} className="p-4 space-y-2.5">
                 <div className="flex items-center gap-3">
-                  <UserAvatar src={m.profilePictureUrl} name={`${m.firstName} ${m.lastName}`} size="sm" />
+                  <ViewableAvatar src={m.profilePictureUrl} name={`${m.firstName} ${m.lastName}`} caption={m.email} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm leading-tight truncate">{m.firstName} {m.lastName}</p>
                     <p className="text-xs text-muted-foreground truncate">{m.email}</p>

@@ -89,7 +89,8 @@ function apply(qc: QueryClient, n: Notice) {
   // A "read" notice only changes the "Seen" line of a chat that is open; the badge and list change when messages or requests do.
   if (n.kind !== "read") { refresh(qc, ["intro-summary"]); refresh(qc, ["intros"]); refresh(qc, ["intro-state"]); }
   const open = qc.getQueryData<IntroDetail>(["intro", n.introductionId]);
-  if (!open) return;
+  // A page that is showing an error has no data, but it still wants to hear that something changed.
+  if (!open) { if (qc.getQueryState(["intro", n.introductionId])?.status === "error") refresh(qc, ["intro", n.introductionId]); return; }
   if (n.kind === "message" || n.kind === "read") void mergeNewMessages(qc, n.introductionId).catch(() => refresh(qc, ["intro", n.introductionId]));
   else refresh(qc, ["intro", n.introductionId]);
 }

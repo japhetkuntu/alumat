@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
-import { skipToken, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNowStrict, isToday, isYesterday, format } from "date-fns";
 import { Button, ChevronDown, MessageCircle, UserAvatar, cn } from "@alumni/ui";
 import { getIntroductions, getIntroSummary, type IntroBox, type IntroCondition, type IntroDetail, type IntroItem } from "@/lib/member-api";
@@ -61,7 +61,7 @@ function Row({ item, active, children }: { item: IntroItem; active: boolean; chi
   return (
     <li>
       <Link href={`/connections/${item.id}`} aria-current={active ? "page" : undefined}
-        className={cn("flex items-center gap-3 border-l-[3px] px-4 py-3 transition-colors hover:bg-muted/60", active ? "border-primary bg-primary/[0.06]" : "border-transparent")}>
+        className={cn("flex items-center gap-3 border-l-[3px] px-4 py-3 transition-colors hover:bg-muted/60", active ? "border-l-primary bg-primary/[0.06]" : "border-l-transparent")}>
         <UserAvatar src={item.other.photoUrl} name={item.other.name} size="lg" />
         {children}
       </Link>
@@ -69,7 +69,7 @@ function Row({ item, active, children }: { item: IntroItem; active: boolean; chi
   );
 }
 
-const ListSkeleton = () => <div className="space-y-3 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-muted" />)}</div>;
+const ListSkeleton = () => <div className="space-y-3 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded-[12px] bg-muted" />)}</div>;
 
 export function ConversationList({ activeId }: { activeId?: string }) {
   const params = useSearchParams();
@@ -85,8 +85,14 @@ export function ConversationList({ activeId }: { activeId?: string }) {
   const live = useStreamConnected();
   const summary = useQuery({ queryKey: ["intro-summary"], queryFn: getIntroSummary, refetchInterval: pollWhenOffline(live, 20_000), staleTime: 10_000 });
   // If the open conversation is an ended or blocked one, its group starts open so it never seems to have vanished from the list.
-  const openDetail = useQuery<IntroDetail>({ queryKey: ["intro", activeId], queryFn: skipToken });
-  const activeIsArchived = !!openDetail.data && (openDetail.data.item.condition ?? "open") !== "open";
+  // Read-only peek at the open chat in the cache. It must not be a query observer: sharing the chat's key, an observer here would replace its fetch function.
+  const qc = useQueryClient();
+  const openCondition = useSyncExternalStore(
+    (cb) => qc.getQueryCache().subscribe(cb),
+    () => (activeId ? qc.getQueryData<IntroDetail>(["intro", activeId])?.item.condition ?? "open" : "open"),
+    () => "open",
+  );
+  const activeIsArchived = openCondition !== "open";
   const archiveOpen = showArchived || activeIsArchived;
 
   const chats = usePagedIntros("chats", search, tab === "chats", live, 15_000);
@@ -108,7 +114,7 @@ export function ConversationList({ activeId }: { activeId?: string }) {
 
   const empty = (title: string, text: string) => (
     <div className="flex flex-col items-center gap-3 px-8 py-14 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"><MessageCircle size={24} className="text-muted-foreground" /></span>
+      <span className="flex h-14 w-14 items-center justify-center rounded-[16px] bg-muted"><MessageCircle size={24} className="text-muted-foreground" /></span>
       <p className="text-[15px] font-semibold">{title}</p>
       <p className="max-w-[26ch] text-[13px] leading-relaxed text-muted-foreground">{text}</p>
       <Link href="/directory"><Button size="sm" variant="outline">Open the directory</Button></Link>
@@ -196,7 +202,7 @@ export function ConversationList({ activeId }: { activeId?: string }) {
         {tab === "requests" && (
           <div className="pb-6">
             <h2 className="px-4 pb-1 pt-4 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Waiting for you</h2>
-            {incoming.isLoading ? <div className="p-4"><div className="h-14 animate-pulse rounded-xl bg-muted" /></div>
+            {incoming.isLoading ? <div className="p-4"><div className="h-14 animate-pulse rounded-[12px] bg-muted" /></div>
               : incoming.items.length === 0 ? <p className="px-4 py-2 text-[13.5px] text-muted-foreground">Nobody is waiting on you.</p>
               : (
                 <>
@@ -214,7 +220,7 @@ export function ConversationList({ activeId }: { activeId?: string }) {
               )}
 
             <h2 className="px-4 pb-1 pt-6 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">You asked</h2>
-            {sent.isLoading ? <div className="p-4"><div className="h-14 animate-pulse rounded-xl bg-muted" /></div>
+            {sent.isLoading ? <div className="p-4"><div className="h-14 animate-pulse rounded-[12px] bg-muted" /></div>
               : sent.items.length === 0 ? <p className="px-4 py-2 text-[13.5px] text-muted-foreground">You haven&apos;t asked anyone yet. Open the <Link href="/directory" className="font-semibold underline underline-offset-4">directory</Link> to find someone.</p>
               : (
                 <>

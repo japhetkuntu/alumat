@@ -10,6 +10,7 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
+import { ViewableAvatar } from "@/components/institution/viewable-avatar";
 import { Textarea } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
@@ -266,7 +267,7 @@ export default function MemberDetailPage() {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-start gap-5">
-            <UserAvatar src={member.profilePictureUrl} name={fullName} size="xl" />
+            <ViewableAvatar src={member.profilePictureUrl} name={fullName} caption={member.email} size="xl" />
             <div className="flex-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-xl font-bold">{fullName}</h2>

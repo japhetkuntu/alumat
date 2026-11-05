@@ -669,9 +669,13 @@ button:active:not(:disabled), [role="button"]:active:not(:disabled) {
   transform: scale(0.98);
 }
 
-:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+/* In the base layer so a component that draws its own focus (a rounded wrapper using focus-within, ring-0, outline-none) is not
+   overridden by a second, square ring on the field inside it. */
+@layer base {
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  }
 }
 
 /* ─── Glass & Blur (Figma Overlays) ────────────────────────────────── */

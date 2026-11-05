@@ -32,7 +32,7 @@ function Linked({ text }: { text: string }) {
 /** One row of the conversation menu: an icon tile, what it does in a few words, and what that means in one plain line. */
 function MenuAction({ icon, title, text, onSelect, destructive }: { icon: React.ReactNode; title: string; text: string; onSelect: () => void; destructive?: boolean }) {
   return (
-    <DropdownMenuItem destructive={destructive} onSelect={onSelect} className="items-start gap-3 rounded-xl px-2.5 py-2.5">
+    <DropdownMenuItem destructive={destructive} onSelect={onSelect} className="items-start gap-3 rounded-[12px] px-2.5 py-2.5">
       <span className={cn("mt-px flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] [&>svg]:!h-4 [&>svg]:!w-4", destructive ? "bg-destructive/10 [&>svg]:!text-destructive" : "bg-muted [&>svg]:!text-foreground/70")}>{icon}</span>
       <span className="min-w-0">
         <span className="block text-[14px] font-semibold leading-tight">{title}</span>
@@ -48,7 +48,7 @@ function ClosedNotice({ condition, endedByMe, other, firstName, onResume, resumi
   onResume: () => void; resuming: boolean; onUnblock: () => void; unblocking: boolean;
 }) {
   const tile = (icon: React.ReactNode, tone: "calm" | "warn" = "calm") => (
-    <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl [&>svg]:!h-[18px] [&>svg]:!w-[18px]", tone === "warn" ? "bg-destructive/10 [&>svg]:!text-destructive" : "bg-muted [&>svg]:!text-foreground/70")}>{icon}</span>
+    <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] [&>svg]:!h-[18px] [&>svg]:!w-[18px]", tone === "warn" ? "bg-destructive/10 [&>svg]:!text-destructive" : "bg-muted [&>svg]:!text-foreground/70")}>{icon}</span>
   );
   let body: React.ReactNode;
   if (condition === "ended" && endedByMe) body = (
@@ -70,7 +70,7 @@ function ClosedNotice({ condition, endedByMe, other, firstName, onResume, resumi
   );
   return (
     <div className="px-3 pb-3 pt-2 sm:px-4" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border p-3.5 animate-in fade-in slide-in-from-bottom-1 duration-300" style={{ borderColor: "var(--border)", background: "color-mix(in oklch, var(--muted) 45%, transparent)" }}>{body}</div>
+      <div className="flex flex-wrap items-center gap-3 rounded-[16px] border p-3.5 animate-in fade-in slide-in-from-bottom-1 duration-300" style={{ borderColor: "var(--border)", background: "color-mix(in oklch, var(--muted) 45%, transparent)" }}>{body}</div>
     </div>
   );
 }
@@ -122,7 +122,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const router = useRouter();
   const qc = useQueryClient();
   const [text, setText] = useState("");
-  const [sending, setSending] = useState<{ key: string; body: string; at: string }[]>([]);
+  const [sending, setSending] = useState<{ key: string; body: string; at: string; sid?: string }[]>([]);
   const [confirm, setConfirm] = useState<null | "end" | "block" | "withdraw">(null);
   const [reporting, setReporting] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
@@ -144,7 +144,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     queryFn: async () => mergeLatest(qc.getQueryData<IntroDetail>(["intro", id]), await getIntroduction(id)),
     // The live connection pushes changes. Only if it is down does this ask every few seconds.
     refetchInterval: (q) => (q.state.data?.canSend ? pollWhenOffline(live, 5_000) : false),
-    retry: false,
+    // A failed fetch (a dropped connection, a request that raced the server) is tried again before the page gives up; a real "not yours / not found" is not.
+    retry: (n, e) => n < 3 && ![401, 403, 404].includes((e as { response?: { status?: number } })?.response?.status ?? 0),
+    retryDelay: (n) => 400 * 2 ** n,
   });
 
   const refresh = useCallback(() => Promise.all([
@@ -200,20 +202,40 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     setText("");
     if (box.current) box.current.style.height = "auto";
     try {
-      await sendIntroMessage(id, body);
-      // Add just the new message; the list and badge refresh in the background.
-      await mergeNewMessages(qc, id);
+      const saved = await sendIntroMessage(id, body);
+      // Put the saved message straight into the chat and let the grey "sending" copy step aside in the same moment, so it is never shown twice.
+      qc.setQueryData<IntroDetail>(["intro", id], (old) => (old && !old.messages.some((m) => m.id === saved.id)
+        ? { ...old, messages: [...old.messages, saved] } : old));
+      setSending((s) => s.map((m) => (m.key === key ? { ...m, sid: saved.id } : m)));
+      void mergeNewMessages(qc, id).catch(() => undefined);
       qc.invalidateQueries({ queryKey: ["intros"] }, { cancelRefetch: false });
       qc.invalidateQueries({ queryKey: ["intro-summary"] }, { cancelRefetch: false });
     } catch (e) {
       setText((t) => (t ? t : body));
       toast.error(handleApiError(e));
-    } finally {
       setSending((s) => s.filter((m) => m.key !== key));
     }
   };
 
-  const messages: Shown[] = [...(data?.messages ?? []), ...sending.map((s) => ({ id: s.key, mine: true, body: s.body, createdAt: s.at, sending: true }))];
+  // Once a message is really in the chat its grey copy is dropped (never before, so there is no moment where it is in neither place).
+  const savedIds = data?.messages;
+  useEffect(() => {
+    if (!savedIds) return;
+    const ids = new Set(savedIds.map((m) => m.id));
+    setSending((s) => (s.some((m) => m.sid && ids.has(m.sid)) ? s.filter((m) => !(m.sid && ids.has(m.sid))) : s));
+  }, [savedIds]);
+
+  // A "sending" copy is shown only until its real message exists, whichever way that arrives (the reply to our own request, or the live stream).
+  const real = data?.messages ?? [];
+  const known = new Set(real.map((m) => m.id));
+  const claimed = new Set<string>();
+  const pending = sending.filter((s) => {
+    if (s.sid && known.has(s.sid)) return false;
+    const twin = real.find((m) => m.mine && m.body === s.body && !claimed.has(m.id) && new Date(m.createdAt).getTime() >= new Date(s.at).getTime() - 3000 && !sending.some((o) => o.sid === m.id));
+    if (twin) { claimed.add(twin.id); return false; }
+    return true;
+  });
+  const messages: Shown[] = [...real, ...pending.map((s) => ({ id: s.key, mine: true, body: s.body, createdAt: s.at, sending: true }))];
   const count = messages.length;
   const lastMine = count > 0 && messages[count - 1].mine;
 
@@ -263,11 +285,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     seenCount.current = count;
   }, [count, atBottom, lastMine, toBottom]);
 
-  if (isLoading) return <div className="flex-1 p-6"><div className="h-full min-h-48 animate-pulse rounded-2xl bg-muted" /></div>;
+  if (isLoading) return <div className="flex-1 p-6"><div className="h-full min-h-48 animate-pulse rounded-[16px] bg-muted" /></div>;
   if (isError || !data) return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
       <p className="text-[15px] font-semibold">This conversation isn&apos;t available.</p>
-      <Link href="/connections"><Button variant="outline">Back to connections</Button></Link>
+      <div className="flex gap-2">
+        <Button onClick={() => void refresh()}>Try again</Button>
+        <Link href="/connections"><Button variant="outline">Back to connections</Button></Link>
+      </div>
     </div>
   );
 
@@ -283,7 +308,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center gap-2.5 border-b bg-background/90 px-2 py-2.5 backdrop-blur sm:px-4" style={{ borderColor: "var(--border)", paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}>
-        <Link href="/connections" aria-label="Back to connections" className="rounded-xl p-2.5 hover:bg-muted lg:hidden"><ArrowLeft size={18} /></Link>
+        <Link href="/connections" aria-label="Back to connections" className="rounded-[12px] p-2.5 hover:bg-muted lg:hidden"><ArrowLeft size={18} /></Link>
         <UserAvatar src={other.photoUrl} name={other.name} size="lg" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-semibold leading-tight">{other.name}</p>
@@ -296,7 +321,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               <MoreHorizontal size={18} />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={6} className="w-[min(92vw,340px)] rounded-2xl p-1.5">
+          <DropdownMenuContent align="end" sideOffset={6} className="w-[min(92vw,340px)] rounded-[16px] p-1.5">
             <div className="flex items-center gap-3 px-2.5 pb-2.5 pt-2">
               <UserAvatar src={other.photoUrl} name={other.name} size="default" />
               <div className="min-w-0">
@@ -319,16 +344,18 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
       {pendingForMe && (
         <div className="flex flex-1 items-center justify-center overflow-y-auto p-5">
-          <section className="w-full max-w-md space-y-4 rounded-2xl border p-6 text-center" style={{ borderColor: "var(--border)" }}>
+          <section className="w-full max-w-md space-y-5 rounded-[24px] border bg-background p-6 text-center shadow-sm animate-in fade-in zoom-in-95 duration-300" style={{ borderColor: "var(--border)" }}>
             <UserAvatar src={other.photoUrl} name={other.name} size="xl" className="mx-auto" />
             <div>
               <p className="text-[16px] font-semibold">{item.reopensIntroductionId ? `${other.name} would like to pick your conversation back up` : `${other.name} would like to be introduced to you`}</p>
               {other.headline && <p className="text-[13px] text-muted-foreground">{other.headline}</p>}
             </div>
-            <blockquote className="whitespace-pre-wrap rounded-xl bg-muted/60 p-4 text-left text-[14.5px] leading-relaxed">“{item.reason}”</blockquote>
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-              <Button isLoading={answer.isPending} loadingText="…" onClick={() => answer.mutate(true)}>{item.reopensIntroductionId ? "Accept and reopen" : "Accept and chat"}</Button>
-              <Button variant="outline" disabled={answer.isPending} onClick={() => answer.mutate(false)}>Not now</Button>
+            <blockquote className="whitespace-pre-wrap rounded-[16px] bg-muted/60 px-4 py-3.5 text-left text-[14.5px] leading-relaxed">
+              <span className="mb-1 block text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground">Their note</span>“{item.reason}”
+            </blockquote>
+            <div className="flex flex-col gap-1.5">
+              <Button className="h-12 w-full rounded-full text-[15px] font-semibold" isLoading={answer.isPending} loadingText="Accepting…" onClick={() => answer.mutate(true)}>{item.reopensIntroductionId ? "Accept and reopen" : "Accept and chat"}</Button>
+              <button type="button" disabled={answer.isPending} onClick={() => answer.mutate(false)} className="w-full rounded-full py-2.5 text-[14px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50">Not now</button>
             </div>
             <p className="text-[12px] text-muted-foreground">{item.reopensIntroductionId ? "Accepting reopens your earlier chat with all its messages. They won't be told if you decline." : "Nothing is shared until you accept. They won't be told if you decline."}</p>
           </section>
@@ -337,13 +364,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
       {pendingMine && (
         <div className="flex flex-1 items-center justify-center p-5">
-          <section className="w-full max-w-md space-y-3 rounded-2xl border p-6 text-center" style={{ borderColor: "var(--border)" }}>
+          <section className="w-full max-w-md space-y-3 rounded-[16px] border p-6 text-center" style={{ borderColor: "var(--border)" }}>
             <UserAvatar src={other.photoUrl} name={other.name} size="xl" className="mx-auto" />
             <div>
               <p className="text-[16px] font-semibold">Waiting for {firstName} to reply</p>
               <p className="mt-0.5 text-[12.5px] text-muted-foreground">Sent {Date.now() - new Date(item.createdAt).getTime() < 45_000 ? "just now" : `${formatDistanceToNowStrict(new Date(item.createdAt))} ago`}</p>
             </div>
-            <blockquote className="whitespace-pre-wrap rounded-xl bg-muted/60 p-4 text-left text-[14px] leading-relaxed text-muted-foreground">Your note: “{item.reason}”</blockquote>
+            <blockquote className="whitespace-pre-wrap rounded-[12px] bg-muted/60 p-4 text-left text-[14px] leading-relaxed text-muted-foreground">Your note: “{item.reason}”</blockquote>
             <p className="text-[12.5px] text-muted-foreground">You&apos;ll be able to chat as soon as they accept, and we&apos;ll let you know.</p>
             <button type="button" className="text-[13px] font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => setConfirm("withdraw")}>Withdraw request</button>
           </section>
@@ -363,7 +390,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               )}
               <div className="mx-auto mb-5 max-w-sm space-y-2 text-center">
                 <p className="flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground"><Lock size={12} className="shrink-0" /> Private between you two. Messages are encrypted when sent and when stored. Administrators can&apos;t read this unless someone reports it. Never send money or passwords.</p>
-                {item.reason && !(messages.length === 0 && canSend) && <p className="rounded-xl bg-muted/60 px-3.5 py-2.5 text-[13px] italic leading-relaxed text-muted-foreground">{item.mine ? "Your note" : `${firstName}'s note`}: “{item.reason}”</p>}
+                {item.reason && !(messages.length === 0 && canSend) && <p className="rounded-[12px] bg-muted/60 px-3.5 py-2.5 text-[13px] italic leading-relaxed text-muted-foreground">{item.mine ? "Your note" : `${firstName}'s note`}: “{item.reason}”</p>}
               </div>
 
               {messages.length === 0 && canSend && (
@@ -376,7 +403,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                     <p className="text-[17px] font-semibold leading-tight">You&apos;re connected with {other.name}</p>
                     {other.headline && <p className="mt-0.5 text-[13px] text-muted-foreground">{other.headline}</p>}
                   </div>
-                  {item.reason && <blockquote className="max-w-sm rounded-xl bg-muted/60 px-4 py-3 text-[13.5px] italic leading-relaxed text-muted-foreground">{item.mine ? "Your note" : `${firstName}'s note`}: “{item.reason}”</blockquote>}
+                  {item.reason && <blockquote className="max-w-sm rounded-[12px] bg-muted/60 px-4 py-3 text-[13.5px] italic leading-relaxed text-muted-foreground">{item.mine ? "Your note" : `${firstName}'s note`}: “{item.reason}”</blockquote>}
                   <p className="text-[14px] font-medium">Say hello to start the conversation</p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {starters.map((s) => (

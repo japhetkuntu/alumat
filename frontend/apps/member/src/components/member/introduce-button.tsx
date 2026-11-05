@@ -94,8 +94,8 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
                 : "They'll see your note and can accept or decline. When they accept, a private chat opens here and we'll let you know."}</DialogDescription>
               </div>
               <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
-                <Button onClick={() => close(false)}>Done</Button>
-                <Link href="/connections?tab=requests"><Button variant="outline" className="w-full">See my requests</Button></Link>
+                <Button className="h-12 rounded-full px-7 text-[15px] font-semibold sm:h-11" onClick={() => close(false)}>Done</Button>
+                <Link href="/connections?tab=requests"><Button variant="outline" className="h-12 w-full rounded-full text-[15px] font-semibold text-foreground sm:h-11">See my requests</Button></Link>
               </div>
             </div>
           ) : (
@@ -106,7 +106,7 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
                 ? `${firstName} ended your conversation. If they accept, it reopens right where you left off, with all your messages. Your note is stored encrypted.`
                 : `${firstName} reads your note and chooses whether to accept. Nothing is shared until they do, and your note is stored encrypted.`}</DialogDescription>
               </DialogHeader>
-              <div className="mt-3 flex items-center gap-3 rounded-xl border p-3" style={{ borderColor: "var(--border)" }}>
+              <div className="mt-3 flex items-center gap-3 rounded-[12px] border p-3" style={{ borderColor: "var(--border)" }}>
                 <UserAvatar src={person?.photoUrl} name={person?.name ?? firstName} size="lg" />
                 <div className="min-w-0">
                   <p className="truncate text-[14.5px] font-semibold leading-tight">{person?.name ?? firstName}</p>
@@ -116,7 +116,7 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
               <div className="mt-4 space-y-2">
                 <Label htmlFor="intro-reason">{reconnect ? "Why would you like to reconnect?" : "Why would you like to connect?"}</Label>
                 <Textarea id="intro-reason" rows={4} maxLength={INTRO_REASON_MAX} value={reason} onChange={(e) => setReason(e.target.value)} autoFocus
-                  placeholder="Same programme, 2014, and I'm moving into data work. I'd value your advice." className="resize-none text-[14px]" />
+                  placeholder="Same programme, 2014, and I'm moving into data work. I'd value your advice." className="resize-none rounded-[12px] text-[14px]" />
                 <div className="flex items-center justify-between gap-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                   <span>{length > 0 && length < INTRO_REASON_MIN ? `A little more, please (${INTRO_REASON_MIN - length} to go)` : "Be specific and kind. People say yes to a clear reason."}</span>
                   <span className="tabular-nums">{length}/{INTRO_REASON_MAX}</span>
@@ -129,8 +129,8 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
               </div>
               <FormError message={error} className="mt-2" />
               <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button variant="outline" onClick={() => close(false)}>Cancel</Button>
-                <Button onClick={() => { setError(null); send.mutate(); }} disabled={length < INTRO_REASON_MIN} isLoading={send.isPending} loadingText="Sending…">Send request</Button>
+                <button type="button" onClick={() => close(false)} className="rounded-full px-5 py-2.5 text-[14px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">Cancel</button>
+                <Button className="h-12 rounded-full px-7 text-[15px] font-semibold sm:h-11" onClick={() => { setError(null); send.mutate(); }} disabled={length < INTRO_REASON_MIN} isLoading={send.isPending} loadingText="Sending…">Send request</Button>
               </div>
             </>
           )}
@@ -141,7 +141,7 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
   if (!on || !state || state.state === "self" || state.state === "unavailable") return null;
 
   const note = (children: React.ReactNode) => (
-    <div className="rounded-xl border px-4 py-3 text-[13px] leading-relaxed" style={{ borderColor: "var(--border)", background: "color-mix(in oklch, var(--muted) 55%, transparent)" }}>{children}</div>
+    <div className="rounded-[12px] border px-4 py-3 text-[13px] leading-relaxed" style={{ borderColor: "var(--border)", background: "color-mix(in oklch, var(--muted) 55%, transparent)" }}>{children}</div>
   );
 
   if (state.state === "connected" && state.introductionId)
