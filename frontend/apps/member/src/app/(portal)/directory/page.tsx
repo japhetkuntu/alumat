@@ -1,13 +1,12 @@
 "use client";
 
 import { IntroduceButton } from "@/components/member/introduce-button";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { LoadError } from "@alumni/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Search, Linkedin, X, Building2, MapPin, User } from "@alumni/ui";
-import { Pagination } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -30,11 +29,30 @@ const years = Array.from(
   (_, i) => currentYear - i,
 );
 
+/** An invisible marker under the grid: when it scrolls into view (a screen early) the next page is requested. */
+function LoadMore({ hasMore, loading, failed, onMore }: { hasMore: boolean; loading: boolean; failed: boolean; onMore: () => void }) {
+  const marker = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = marker.current;
+    if (!el || !hasMore || loading || failed) return;
+    const watch = new IntersectionObserver(([e]) => { if (e.isIntersecting) onMore(); }, { rootMargin: "600px 0px" });
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [hasMore, loading, failed, onMore]);
+  if (!hasMore) return null;
+  return (
+    <div ref={marker} className="flex min-h-16 items-center justify-center" aria-live="polite">
+      {loading && <span className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" role="status" aria-label="Loading more members" />}
+      {failed && <Button variant="outline" size="sm" className="font-semibold" onClick={onMore}>Couldn&apos;t load more. Try again</Button>}
+    </div>
+  );
+}
+
 export default function MemberDirectoryPage() {
   const searchParams = useSearchParams();
+  const [typed,      setTyped]      = useState(() => searchParams.get("search") ?? "");
   const [search,     setSearch]     = useState(() => searchParams.get("search") ?? "");
   const [yearFilter, setYearFilter] = useState(() => searchParams.get("year") ?? "");
-  const [page,       setPage]       = useState(1);
   const [selected,   setSelected]   = useState<Member | null>(null);
   const pageSize = 24;
   const vvHeight = useVisualViewportHeight();
@@ -44,23 +62,36 @@ export default function MemberDirectoryPage() {
   const { data: me } = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile, staleTime: 5 * 60_000 });
   const myYear = me?.graduationYear && me.graduationYear > 0 ? String(me.graduationYear) : "";
 
-  const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey:        ["member-directory", search, yearFilter, page],
-    queryFn:         () => searchDirectory({
+  // Typing is sent to the server after a short pause, so a name is one request, not one per letter.
+  useEffect(() => { const t = window.setTimeout(() => setSearch(typed.trim()), 250); return () => window.clearTimeout(t); }, [typed]);
+
+  // The directory is read a page at a time: the first 24 are quick however many members there are, and the next 24 arrive as the
+  // reader nears the bottom. Changing the search or year starts again from the top.
+  const list = useInfiniteQuery({
+    queryKey:         ["member-directory", search, yearFilter],
+    queryFn:          ({ pageParam }) => searchDirectory({
       search:         search || undefined,
       graduationYear: yearFilter ? Number(yearFilter) : undefined,
-      page,
+      page:           pageParam,
       pageSize,
     }),
-    placeholderData: (prev) => prev,
+    initialPageParam: 1,
+    getNextPageParam: (last, all) => (all.length < last.totalPages ? all.length + 1 : undefined),
+    placeholderData:  (prev) => prev,
+    staleTime:        60_000,
+    refetchOnWindowFocus: false,
   });
+  const { data, isLoading, isFetching, isFetchingNextPage, isFetchNextPageError, isError, refetch } = list;
+  const loadMore = useCallback(() => { if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage(); }, [list]);
 
   const suggestions = useQuery({ queryKey: ["member-directory-suggestions"], queryFn: getDirectorySuggestions, staleTime: 5 * 60_000, retry: false });
-  const members    = data?.results ?? [];
-  const totalPages = data?.totalPages ?? 1;
-  const hasFilters = !!(search || yearFilter);
+  // A member can shift between pages while someone scrolls (a new sign-up), so the same person is never listed twice.
+  const seen = new Set<string>();
+  const members = (data?.pages ?? []).flatMap((p) => p.results).filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)));
+  const total = data?.pages[0]?.totalCount ?? 0;
+  const hasFilters = !!(typed || search || yearFilter);
 
-  function clearFilters() { setSearch(""); setYearFilter(""); setPage(1); }
+  function clearFilters() { setTyped(""); setSearch(""); setYearFilter(""); }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
@@ -82,15 +113,15 @@ export default function MemberDirectoryPage() {
           />
           <Input
             placeholder="Search by name, company, location…"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            value={typed}
+            onChange={e => setTyped(e.target.value)}
             className="h-11 pl-9 text-[14px]"
           />
         </div>
         {!isCommunity && (
           <SearchableSelect
             value={yearFilter || "__all__"}
-            onValueChange={v => { setYearFilter(v === "__all__" ? "" : v); setPage(1); }}
+            onValueChange={v => setYearFilter(v === "__all__" ? "" : v)}
             placeholder="All years"
             searchPlaceholder="Type a year"
             className="sm:w-56"
@@ -117,7 +148,7 @@ export default function MemberDirectoryPage() {
           <button
             type="button"
             aria-pressed={yearFilter === myYear}
-            onClick={() => { setYearFilter(yearFilter === myYear ? "" : myYear); setPage(1); }}
+            onClick={() => setYearFilter(yearFilter === myYear ? "" : myYear)}
             className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${yearFilter === myYear ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
           >
             My class, {myYear}
@@ -126,14 +157,14 @@ export default function MemberDirectoryPage() {
       )}
 
       {/* Subtle "updating" indicator */}
-      {isFetching && !isLoading && (
+      {isFetching && !isLoading && !isFetchingNextPage && (
         <p className="text-[12.5px] font-medium text-center animate-pulse" style={{ color: "var(--primary)" }}>
           Updating…
         </p>
       )}
 
       {/* ── People you may know: only on the plain view, before any search or filter ── */}
-      {!hasFilters && page === 1 && (suggestions.data?.length ?? 0) > 0 && (
+      {!hasFilters && (suggestions.data?.length ?? 0) > 0 && (
         <section aria-labelledby="suggested-heading" className="space-y-3">
           <h2 id="suggested-heading" className="text-[15px] font-bold">People you may know</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -164,15 +195,22 @@ export default function MemberDirectoryPage() {
           action={hasFilters ? <Button variant="outline" size="sm" className="font-semibold" onClick={clearFilters}>Clear filters</Button> : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {members.map(m => (
-            <DirectoryMemberCard key={m.id} member={m} selected={selected?.id === m.id} isCommunity={isCommunity}
-              onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
-          ))}
-        </div>
+        <>
+          <p className="text-[12.5px] font-medium text-muted-foreground" aria-live="polite">
+            {total.toLocaleString()} {total === 1 ? "member" : "members"}{hasFilters ? " match" : ""}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {members.map(m => (
+              <DirectoryMemberCard key={m.id} member={m} selected={selected?.id === m.id} isCommunity={isCommunity}
+                onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
+            ))}
+          </div>
+          <LoadMore hasMore={!!list.hasNextPage} loading={isFetchingNextPage} failed={isFetchNextPageError} onMore={loadMore} />
+          {!list.hasNextPage && members.length > pageSize && (
+            <p className="pb-2 text-center text-[13px] text-muted-foreground">You&apos;ve seen everyone{hasFilters ? " who matches" : ""}.</p>
+          )}
+        </>
       )}
-
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* ── Profile drawer ── */}
       {selected && typeof document !== "undefined" && createPortal(

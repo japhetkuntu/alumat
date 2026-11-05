@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -54,7 +54,9 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
 
   const send = useMutation({
     mutationFn: () => requestIntroduction(memberId, reason.trim()),
-    onSuccess: () => { setSent(true); setError(null); refresh(); },
+    // The status behind the sheet ("Ask" turns into "Request sent") is refreshed once the sheet has closed, so the page under it does not
+    // jump while the sheet is still on screen.
+    onSuccess: () => { setSent(true); setError(null); refreshAfterClose.current = true; },
     onError: (e) => setError(handleApiError(e)),
   });
   const withdraw = useMutation({
@@ -74,11 +76,24 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
   });
 
   // When they ended an earlier conversation, a yes brings that same chat back with all its messages instead of starting a new one.
-  const reconnect = state?.state === "reconnectable";
+  // Decided when the sheet opens and held while it is open: sending changes the status behind it ("reconnectable" becomes "pending"),
+  // and the sheet's wording must not change under the person's eyes.
+  const reconnectAtOpen = useRef(false);
+  const reconnect = open ? reconnectAtOpen.current : state?.state === "reconnectable";
   const starters = reconnect ? RECONNECT_STARTERS : STARTERS;
   const length = reason.trim().length;
   const addStarter = (s: string) => setReason((r) => (r.trim() ? `${r.trim()} ${s}` : s).slice(0, INTRO_REASON_MAX));
-  const close = (v: boolean) => { setOpen(v); if (!v) { setError(null); if (sent) { setSent(false); setReason(""); } } };
+  // The sheet keeps showing "Request sent" while it slides away. Clearing the form at the moment of closing would flash the empty form
+  // (and change the sheet's height) during that exit, so it is cleared the next time the sheet is opened instead.
+  const refreshAfterClose = useRef(false);
+  const close = (v: boolean) => {
+    setOpen(v);
+    if (!v) {
+      setError(null);
+      if (refreshAfterClose.current) { refreshAfterClose.current = false; window.setTimeout(refresh, 320); }
+    }
+  };
+  const openSheet = () => { reconnectAtOpen.current = state?.state === "reconnectable"; if (sent) { setSent(false); setReason(""); } setOpen(true); };
 
 
   const dialog = (
@@ -95,7 +110,7 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
               </div>
               <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
                 <Button className="h-12 rounded-full px-7 text-[15px] font-semibold sm:h-11" onClick={() => close(false)}>Done</Button>
-                <Link href="/connections?tab=requests"><Button variant="outline" className="h-12 w-full rounded-full text-[15px] font-semibold text-foreground sm:h-11">See my requests</Button></Link>
+                <Link href="/connections?tab=requests" onClick={() => { if (refreshAfterClose.current) { refreshAfterClose.current = false; refresh(); } }}><Button variant="outline" className="h-12 w-full rounded-full text-[15px] font-semibold text-foreground sm:h-11">See my requests</Button></Link>
               </div>
             </div>
           ) : (
@@ -179,7 +194,7 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
 
   return (
     <>
-      <Button className="w-full gap-2 text-[13.5px] font-semibold" style={{ height: 42 }} onClick={() => setOpen(true)}>
+      <Button className="w-full gap-2 text-[13.5px] font-semibold" style={{ height: 42 }} onClick={openSheet}>
         <MessageCircle size={15} /> {reconnect ? `Ask ${firstName} to reopen your conversation` : `Ask ${firstName} for an introduction`}
       </Button>
       {dialog}
