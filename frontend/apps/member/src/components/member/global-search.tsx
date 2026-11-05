@@ -115,7 +115,7 @@ export function GlobalSearch({ pages, hotkey = false }: { pages: SearchPage[]; h
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Search the portal"
-        className="inline-flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-primary"
       >
         <Search size={18} />
       </button>

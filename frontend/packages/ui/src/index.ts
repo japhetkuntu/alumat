@@ -33,6 +33,7 @@ export * from "./components/input";
 export * from "./components/label";
 export * from "./components/link-or-upload";
 export * from "./components/lightbox";
+export * from "./components/sheet-gestures";
 export * from "./components/event-update-blocks";
 export * from "./components/media-gallery";
 export * from "./components/read-more";

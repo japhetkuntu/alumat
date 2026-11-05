@@ -598,25 +598,20 @@ export function MemberLayout({ children }: { children: ReactNode }) {
             {/* Menu button sits on the left, matching the drawer it opens —
                 the drawer itself slides in from the left, so the control for
                 it belongs on the same side rather than opposite it. */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 w-10 p-0 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 -ml-1"
-              onClick={() => setMobileOpen(true)}
-              aria-label="Open full menu"
-            >
-              <Menu size={20} className="text-muted-foreground" />
-            </Button>
+            <button type="button" onClick={() => setMobileOpen(true)} aria-label="Open full menu"
+              className="-ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-primary">
+              <Menu size={19} />
+            </button>
             {brandMark ? (
-              <img src={brandMark} alt={brandName} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+              <img src={brandMark} alt={brandName} className="h-8 w-8 shrink-0 rounded-[10px] object-cover ring-1 ring-black/5" />
             ) : (
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]" style={{ background: "var(--primary)" }}>
                 <span className="text-[12px] font-bold text-white">{getInitials(brandName)}</span>
               </div>
             )}
-            <span className="min-w-0 font-bold text-[14.5px] leading-tight tracking-tight truncate sm:max-w-[240px]">{brandName}</span>
+            <span className="min-w-0 text-[14px] font-bold leading-[1.15] tracking-tight line-clamp-2 sm:max-w-[240px]">{brandName}</span>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-0.5">
             <GlobalSearch pages={searchPages} />
             <NotificationPanel />
             {accountMenu(false)}

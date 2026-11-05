@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, ChevronRight, Loader2, X } from "@alumni/ui";
-import { Button } from "@alumni/ui";
+import { Bell, Check, CheckCheck, ChevronRight, Dialog, DialogContent, DialogDescription, DialogTitle, Loader2, X, useSwipeDownToClose } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
@@ -15,7 +14,7 @@ import {
   markAllNotificationsRead,
 } from "@/lib/member-api";
 import type { NotificationItem } from "@/types";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isToday } from "date-fns";
 import { getTypeMeta, TypeIcon, toNotificationPath } from "@/lib/notification-meta";
 
 function useNotifications() {
@@ -60,10 +59,13 @@ function NotificationRow({
   notif,
   onMarkRead,
   onNavigate,
+  roomy,
 }: {
   notif: NotificationItem;
   onMarkRead: (id: string) => void;
   onNavigate: () => void;
+  /** Phone sheet: larger type and touch-sized spacing. */
+  roomy?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const path = toNotificationPath(notif.actionUrl);
@@ -81,11 +83,12 @@ function NotificationRow({
       onClick={toggle}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       className={cn(
-        "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
+        "flex gap-3 hover:bg-muted/50 transition-colors cursor-pointer group",
+        roomy ? "px-5 py-3.5" : "px-4 py-3",
         !notif.isRead && "bg-accent/5"
       )}
     >
-      <TypeIcon type={notif.type} size={14} boxPx={30} />
+      <TypeIcon type={notif.type} size={roomy ? 16 : 14} boxPx={roomy ? 38 : 30} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: meta.color, opacity: 0.85 }}>
@@ -93,10 +96,10 @@ function NotificationRow({
           </span>
           {!notif.isRead && <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-accent" />}
         </div>
-        <p className={cn("text-[13px] leading-snug", !notif.isRead && "font-semibold")}>
+        <p className={cn("leading-snug", roomy ? "text-[14.5px]" : "text-[13px]", !notif.isRead && "font-semibold")}>
           {notif.title}
         </p>
-        <p className={cn("text-[12px] text-muted-foreground leading-snug mt-0.5", !expanded && "line-clamp-2")}>
+        <p className={cn("text-muted-foreground leading-snug mt-0.5", roomy ? "text-[13px]" : "text-[12px]", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
         {notif.imageUrl && (
@@ -137,8 +140,22 @@ function NotificationRow({
   );
 }
 
+function useIsPhone() {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(max-width: 639px)");
+    const on = () => setPhone(m.matches);
+    on();
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
+  return phone;
+}
+
 export function NotificationPanel() {
   const [open, setOpen] = useState(false);
+  const phone = useIsPhone();
+  const swipe = useSwipeDownToClose(() => setOpen(false));
   const panelRef = useRef<HTMLDivElement>(null);
   const { unreadQuery, listQuery, markRead, markAll } = useNotifications();
 
@@ -147,7 +164,7 @@ export function NotificationPanel() {
 
   // Close on outside click
   useEffect(() => {
-    if (!open) return;
+    if (!open || phone) return;   // the phone sheet is a modal with its own backdrop
     function handle(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -155,30 +172,91 @@ export function NotificationPanel() {
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
+  }, [open, phone]);
+
+  const todays = notifications.filter((n) => isToday(new Date(n.createdAt)));
+  const earlier = notifications.filter((n) => !isToday(new Date(n.createdAt)));
 
   return (
     <div className="relative" ref={panelRef}>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="relative h-10 w-10 p-0 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95"
+      <button
+        type="button"
+        className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted-foreground outline-none transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-95 focus-visible:ring-2 focus-visible:ring-primary"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Notifications"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        aria-expanded={open}
       >
-        <Bell size={20} className="text-muted-foreground" />
+        <Bell size={18} />
         {unreadCount > 0 && (
-          <>
-            {/* Gentle ambient pulse — reinforces "something's waiting" without a full-on badge animation loop. */}
-            <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full bg-accent/60 animate-ping" style={GPU_LAYER_STYLE} />
-            <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full bg-accent text-accent-foreground text-[12px] font-bold flex items-center justify-center px-0.5 leading-none">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          </>
+          <span className="absolute right-1 top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-foreground ring-2 ring-background">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
         )}
-      </Button>
+      </button>
 
-      {open && (
+      {phone && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent ref={swipe.ref} className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden rounded-t-[24px] p-0 pt-4 sm:rounded-[20px]">
+            <div className="flex touch-none items-end justify-between gap-3 px-5 pb-3 pr-16" {...swipe.bind}>
+              <div className="min-w-0">
+                <DialogTitle className="font-[family-name:var(--font-display)] text-[20px] font-semibold tracking-tight">Notifications</DialogTitle>
+                <DialogDescription className="mt-0.5 text-[13px]">{unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up"}</DialogDescription>
+              </div>
+            </div>
+            {unreadCount > 0 && (
+              <div className="px-5 pb-3">
+                <button type="button" onClick={() => markAll.mutate()} disabled={markAll.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3.5 py-1.5 text-[13px] font-semibold text-accent transition-colors hover:bg-accent/15 disabled:opacity-50">
+                  {markAll.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCheck size={12} />} Mark all as read
+                </button>
+              </div>
+            )}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-border/50">
+              {listQuery.isLoading ? (
+                <div className="divide-y divide-border/30">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex animate-pulse gap-3 px-5 py-4">
+                      <div className="h-[38px] w-[38px] shrink-0 rounded-full bg-muted" />
+                      <div className="min-w-0 flex-1 space-y-2"><div className="h-3 w-3/4 rounded bg-muted" /><div className="h-2.5 w-full rounded bg-muted" /></div>
+                    </div>
+                  ))}
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="px-6 py-14 text-center">
+                  <span className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-muted"><Bell size={22} className="text-muted-foreground" /></span>
+                  <p className="text-[15px] font-semibold">Nothing yet</p>
+                  <p className="mx-auto mt-1 max-w-[26ch] text-[13px] leading-relaxed text-muted-foreground">You&apos;ll hear about events, jobs, messages and more here.</p>
+                </div>
+              ) : (
+                <>
+                  {[["Today", todays], ["Earlier", earlier]].map(([label, group]) => (group as NotificationItem[]).length > 0 && (
+                    <section key={label as string}>
+                      {(todays.length > 0 && earlier.length > 0) && <h3 className="bg-muted/40 px-5 py-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground">{label as string}</h3>}
+                      <div className="divide-y divide-border/30">
+                        {(group as NotificationItem[]).map((n) => (
+                          <NotificationRow key={n.id} notif={n} roomy onMarkRead={(id) => markRead.mutate(id)} onNavigate={() => setOpen(false)} />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </>
+              )}
+            </div>
+            <div className="space-y-2 border-t border-border/60 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+              <Link href="/notifications" onClick={() => setOpen(false)}
+                className="flex h-11 w-full items-center justify-center rounded-full bg-muted text-[14px] font-semibold text-foreground transition-colors hover:bg-muted/70">
+                View all notifications
+              </Link>
+              <button type="button" onClick={() => setOpen(false)}
+                className="flex h-10 w-full items-center justify-center rounded-full text-[14px] font-semibold text-muted-foreground transition-colors hover:text-foreground">
+                Close
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {open && !phone && (
         <>
           {/* Mobile backdrop */}
           <div

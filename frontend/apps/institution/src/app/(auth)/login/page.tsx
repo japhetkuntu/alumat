@@ -91,6 +91,7 @@ function GoogleSignInButton() {
   if (!bridgeUrl || !origin) return null;
   const href = buildGoogleBridgeUrl(bridgeUrl, { portal: "institution", return: origin, theme });
   return (
+    <div data-google className="peer mt-10 space-y-6">
     <a
       href={href}
       className="flex items-center justify-center gap-2.5 w-full h-12 border text-[14px] font-semibold transition-colors hover:bg-muted/50"
@@ -104,6 +105,12 @@ function GoogleSignInButton() {
       </svg>
       Continue with Google
     </a>
+    <div className="flex items-center gap-3">
+      <div className="h-px flex-1" style={{ background: "var(--border)" }} />
+      <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or sign in with email</span>
+      <div className="h-px flex-1" style={{ background: "var(--border)" }} />
+    </div>
+    </div>
   );
 }
 
@@ -186,7 +193,9 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-10">
+      <GoogleSignInButton />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-10 peer-data-[google]:mt-6">
 
         {SHOW_WORKSPACE_FIELD && (
           <div className="mb-6">
@@ -287,15 +296,6 @@ export default function AdminLoginPage() {
           Sign in
         </Button>
 
-        <div className="flex items-center gap-3 mt-7">
-          <div className="h-px flex-1" style={{ background: "var(--border)" }} />
-          <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
-          <div className="h-px flex-1" style={{ background: "var(--border)" }} />
-        </div>
-
-        <div className="mt-7">
-          <GoogleSignInButton />
-        </div>
       </form>
     </div>
   );

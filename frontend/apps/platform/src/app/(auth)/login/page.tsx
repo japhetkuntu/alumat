@@ -51,6 +51,7 @@ function GoogleSignInButton() {
   if (!bridgeUrl || !origin) return null;
   const href = `${bridgeUrl}?portal=platform&return=${encodeURIComponent(origin)}`;
   return (
+    <div className="space-y-5">
     <a
       href={href}
       className="flex items-center justify-center gap-2.5 w-full h-12 border text-[14px] font-semibold transition-colors hover:bg-muted/50"
@@ -64,6 +65,12 @@ function GoogleSignInButton() {
       </svg>
       Continue with Google
     </a>
+    <div className="flex items-center gap-3">
+      <div className="h-px flex-1" style={{ background: "var(--border)" }} />
+      <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or sign in with email</span>
+      <div className="h-px flex-1" style={{ background: "var(--border)" }} />
+    </div>
+    </div>
   );
 }
 
@@ -114,6 +121,8 @@ export default function PlatformLoginPage() {
             Internal tool for platform operations, support, and billing staff.
           </p>
         </div>
+
+        <GoogleSignInButton />
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
@@ -170,14 +179,6 @@ export default function PlatformLoginPage() {
             Sign in
           </Button>
         </form>
-
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1" style={{ background: "var(--border)" }} />
-          <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
-          <div className="h-px flex-1" style={{ background: "var(--border)" }} />
-        </div>
-
-        <GoogleSignInButton />
       </div>
     </div>
   );

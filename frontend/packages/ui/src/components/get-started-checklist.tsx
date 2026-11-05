@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, Circle, ClipboardList, X } from "./icons";
+import { Check, ClipboardList, X } from "./icons";
 import { Button } from "./button";
-import { Progress } from "./progress";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./dialog";
+import { useSwipeDownToClose } from "./sheet-gestures";
 import { cn } from "../lib/utils";
 
 export interface ChecklistItem {
@@ -29,6 +30,19 @@ interface GetStartedChecklistProps {
   className?: string;
 }
 
+/** True on a phone-width screen, where the panel is a bottom sheet instead of a small card beside the button. */
+function useIsPhone() {
+  const [phone, setPhone] = React.useState(false);
+  React.useEffect(() => {
+    const m = window.matchMedia("(max-width: 639px)");
+    const on = () => setPhone(m.matches);
+    on();
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
+  return phone;
+}
+
 function readDismissed(key: string): boolean {
   try {
     return !!(JSON.parse(localStorage.getItem(key) ?? "{}") as { dismissed?: boolean }).dismissed;
@@ -48,6 +62,11 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
   const [dismissed, setDismissed] = React.useState(false);
   const [open, setOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLElement>(null);
+  const phone = useIsPhone();
+  const [confirmHide, setConfirmHide] = React.useState(false);
+  React.useEffect(() => { if (!confirmHide) return; const t = window.setTimeout(() => setConfirmHide(false), 4000); return () => window.clearTimeout(t); }, [confirmHide]);
+  React.useEffect(() => { if (!open) setConfirmHide(false); }, [open]);
+  const swipe = useSwipeDownToClose(() => setOpen(false));
 
   React.useEffect(() => {
     setDismissed(readDismissed(storageKey));
@@ -55,7 +74,7 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
   }, [storageKey]);
 
   React.useEffect(() => {
-    if (!open) return;
+    if (!open || phone) return;
     function onPointerDown(e: MouseEvent | TouchEvent) {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
     }
@@ -70,7 +89,7 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, phone]);
 
   // Phones: slide out of the way while the page scrolls down (it would otherwise sit on top of buttons
   // like "Pay now"), and come back as soon as the person scrolls up. Never tucks away while open.
@@ -111,6 +130,81 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
     } catch { /* ignore */ }
   }
 
+  const steps = (
+    <ul className="space-y-2.5">
+      {items.map((item, index) => {
+        const isNext = item.id === nextId;
+        return (
+          <li key={item.id}
+            className={cn("flex gap-3.5 rounded-[16px] border px-3.5 py-3.5 transition-colors",
+              item.done ? "border-transparent bg-muted/40" : isNext ? "border-primary/25 bg-primary/[0.05]" : "border-border/70 bg-background")}>
+            <span aria-hidden
+              className={cn("mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12px] font-bold",
+                item.done ? "bg-success text-white" : isNext ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+              {item.done ? <Check size={13} /> : index + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={cn("text-[14px] font-semibold leading-snug", item.done ? "text-muted-foreground" : "text-foreground")}>
+                {item.title}
+              </p>
+              {!item.done && item.description && (
+                <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{item.description}</p>
+              )}
+              {!item.done && (
+                isNext ? (
+                  <Button className="mt-3 h-10 w-full rounded-full text-[13.5px] font-semibold sm:w-auto sm:px-5"
+                    onClick={() => { setOpen(false); item.onAction(); }}>
+                    {item.actionLabel}
+                  </Button>
+                ) : (
+                  <button type="button" onClick={() => { setOpen(false); item.onAction(); }}
+                    className="mt-2 text-[13px] font-semibold text-primary hover:underline">
+                    {item.actionLabel}
+                  </button>
+                )
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const progress = (
+    <div className="flex items-center gap-3">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-primary/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+        <div className="h-full rounded-full bg-primary transition-all duration-500 ease-out" style={{ width: `${percent}%` }} />
+      </div>
+      <span className="text-[12px] font-semibold tabular-nums text-muted-foreground">{doneCount}/{items.length}</span>
+    </div>
+  );
+
+  // Hiding is permanent, so it takes a deliberate second tap. Closing the sheet is the Close button, a tap outside it, or a drag down.
+  const hideLink = (
+    <button type="button" onClick={() => (confirmHide ? hide() : setConfirmHide(true))}
+      className={cn("text-[12.5px] hover:underline", confirmHide ? "font-semibold text-destructive" : "text-muted-foreground hover:text-foreground")}>
+      {confirmHide ? "Tap again to hide it for good" : "Don't show this again"}
+    </button>
+  );
+
+  const launcher = (
+    <button
+      type="button"
+      onClick={() => setOpen((o) => !o)}
+      aria-expanded={open}
+      aria-controls="get-started-panel"
+      aria-label={`${title}: ${doneCount} of ${items.length} steps done`}
+      className="relative flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-border/60 bg-primary text-primary-foreground shadow-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
+    >
+      {open && !phone ? <X size={16} /> : <ClipboardList size={17} />}
+      {!(open && !phone) && (
+        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-card px-1 text-[11px] font-bold leading-none text-foreground">
+          {remaining}
+        </span>
+      )}
+    </button>
+  );
+
   return (
     <section
       ref={rootRef}
@@ -121,90 +215,49 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
         className
       )}
     >
-      {open && (
+      {/* Wide screens: a small card beside the button. */}
+      {open && !phone && (
         <div
           id="get-started-panel"
-          className="max-h-[min(32rem,calc(100dvh-11rem))] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto border border-border bg-card shadow-sm animate-in fade-in-0 duration-150"
+          className="max-h-[min(34rem,calc(100dvh-11rem))] w-[min(23rem,calc(100vw-2rem))] overflow-y-auto rounded-[20px] border border-border bg-card p-4 shadow-xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
         >
-          <div className="flex items-start gap-2 px-4 pt-3.5">
+          <div className="flex items-start gap-2">
             <div className="min-w-0 flex-1">
-              <p className="text-[13.5px] font-semibold text-foreground">{title}</p>
-              <p className="text-[12px] text-muted-foreground">{doneCount} of {items.length} steps done</p>
+              <p className="text-[15px] font-semibold text-foreground">{title}</p>
+              <p className="text-[12.5px] text-muted-foreground">{remaining} {remaining === 1 ? "step" : "steps"} to go</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close checklist"
-              className="p-1 text-muted-foreground hover:text-foreground"
-            >
-              <X size={13} />
+            <button type="button" onClick={() => setOpen(false)} aria-label="Close checklist"
+              className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
+              <X size={14} />
             </button>
           </div>
-          <Progress value={percent} className="mx-4 mt-2.5 h-1.5 w-auto" />
-          <ul className="mt-2">
-            {items.map((item) => {
-              const isNext = item.id === nextId;
-              return (
-                <li key={item.id} className={cn("flex gap-3 px-4 py-2.5", isNext && "bg-muted/50")}>
-                  {item.done ? (
-                    <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-success" />
-                  ) : (
-                    <Circle size={15} className="mt-0.5 shrink-0 text-muted-foreground/60" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className={cn("text-[13px] font-semibold", item.done ? "text-muted-foreground line-through" : "text-foreground")}>
-                      {item.title}
-                    </p>
-                    {!item.done && item.description && (
-                      <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">{item.description}</p>
-                    )}
-                    {!item.done && (
-                      isNext ? (
-                        <Button
-                          size="sm"
-                          className="mt-2 h-8 px-3 text-[12px] font-semibold"
-                          onClick={() => { setOpen(false); item.onAction(); }}
-                        >
-                          {item.actionLabel}
-                        </Button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => { setOpen(false); item.onAction(); }}
-                          className="mt-1 text-[12px] font-semibold text-primary hover:underline"
-                        >
-                          {item.actionLabel}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="border-t border-border px-4 py-2.5">
-            <button type="button" onClick={hide} className="text-[12px] text-muted-foreground hover:text-foreground hover:underline">
-              Hide this checklist
-            </button>
-          </div>
+          <div className="mt-3">{progress}</div>
+          <div className="mt-4">{steps}</div>
+          <div className="mt-4 border-t border-border pt-3">{hideLink}</div>
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls="get-started-panel"
-        aria-label={`${title}: ${doneCount} of ${items.length} steps done`}
-        className="relative flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-border/60 bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-      >
-        {open ? <X size={16} /> : <ClipboardList size={17} />}
-        {!open && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-card px-1 text-[11px] font-bold leading-none text-foreground">
-            {remaining}
-          </span>
-        )}
-      </button>
+      {launcher}
+
+      {/* Phones: a bottom sheet, like the rest of the app's sheets. */}
+      {phone && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent ref={swipe.ref} id="get-started-panel" className="flex max-h-[88dvh] flex-col gap-0 overflow-hidden rounded-t-[24px] p-0 pt-4 sm:rounded-[20px]">
+            <div className="shrink-0 touch-none px-5 pb-4 pr-16" {...swipe.bind}>
+              <DialogTitle className="font-[family-name:var(--font-display)] text-[20px] font-semibold tracking-tight">{title}</DialogTitle>
+              <DialogDescription className="mt-0.5 text-[13px]">
+                {remaining === 1 ? "One step to go." : `${remaining} steps to go.`} Each one ticks itself off.
+              </DialogDescription>
+              <div className="mt-3.5">{progress}</div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3">{steps}</div>
+            <div className="shrink-0 space-y-2 border-t border-border/60 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3.5 text-center">
+              <Button variant="outline" className="h-11 w-full rounded-full text-[14px] font-semibold text-foreground" onClick={() => setOpen(false)}>Close</Button>
+              {hideLink}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </section>
   );
 }
