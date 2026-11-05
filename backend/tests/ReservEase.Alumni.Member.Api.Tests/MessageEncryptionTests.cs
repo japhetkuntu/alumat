@@ -100,7 +100,7 @@ public class MessageEncryptionTests
         var read = (await rig.Service.GetAsync(id, null, rig.Kofi)).Data!;
         Assert.Equal("My salary expectation is GH₵ 14,000", Assert.Single(read.Messages).Body);
         Assert.Contains("moving into data work", read.Item.Reason);
-        Assert.StartsWith("My salary expectation", Assert.Single((await rig.Service.ListAsync("chats", rig.Kofi)).Data!).LastMessagePreview);
+        Assert.StartsWith("My salary expectation", Assert.Single((await rig.Service.ListAsync("chats", null, 25, null, rig.Kofi)).Data!.Items).LastMessagePreview);
     }
 
     [Fact]

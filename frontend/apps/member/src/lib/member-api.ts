@@ -1298,8 +1298,16 @@ export interface IntroItem {
   reopensIntroductionId?: string | null;
 }
 export interface IntroMessage { id: string; mine: boolean; body: string; createdAt: string }
-export interface IntroDetail { item: IntroItem; canSend: boolean; messages: IntroMessage[]; /** When the other member last opened the conversation. */ otherReadAt?: string | null }
-export interface IntroSummary { unreadChats: number; incomingRequests: number }
+export interface IntroDetail {
+  item: IntroItem; canSend: boolean; messages: IntroMessage[];
+  /** When the other member last opened the conversation. */ otherReadAt?: string | null;
+  /** Older messages exist than the ones loaded (scroll up for them). */ hasMoreBefore?: boolean;
+  /** More new messages exist than fit in this reply (ask again from the last one). */ hasMoreAfter?: boolean;
+}
+/** One page of a list, newest activity first. Pass `nextCursor` back for the page after; it is null on the last page. */
+export interface IntroPage { items: IntroItem[]; nextCursor?: string | null }
+export type IntroBox = "chats" | "archived" | "incoming" | "sent";
+export interface IntroSummary { unreadChats: number; incomingRequests: number; archivedChats?: number }
 
 export const INTRO_REASON_MIN = 10;
 export const INTRO_REASON_MAX = 300;
@@ -1313,19 +1321,19 @@ export async function requestIntroduction(memberId: string, reason: string): Pro
   const res = await memberClient.post("/introductions", { memberId, reason });
   return res.data.data!;
 }
-export async function getIntroductions(box: "chats" | "incoming" | "sent"): Promise<IntroItem[]> {
-  const res = await memberClient.get("/introductions", { params: { box } });
+export async function getIntroductions(box: IntroBox, opts: { cursor?: string | null; q?: string; limit?: number } = {}): Promise<IntroPage> {
+  const res = await memberClient.get("/introductions", { params: { box, cursor: opts.cursor || undefined, q: opts.q || undefined, limit: opts.limit } });
   return res.data.data!;
 }
 export async function getIntroSummary(): Promise<IntroSummary> {
   const res = await memberClient.get("/introductions/summary");
   return res.data.data!;
 }
-export async function getIntroduction(id: string, after?: string): Promise<IntroDetail> {
-  const res = await memberClient.get(`/introductions/${id}`, { params: { after } });
+/** The newest page; or, with `before`, the page of older messages; or, with `after`, what is newer than that message. */
+export async function getIntroduction(id: string, after?: string, before?: string, limit?: number): Promise<IntroDetail> {
+  const res = await memberClient.get(`/introductions/${id}`, { params: { after, before, limit } });
   return res.data.data!;
 }
-/** Answers a request. The reply says which conversation to open: the new one, or an earlier one that was reopened. */
 export const answerIntroduction = (id: string, accept: boolean): Promise<{ data?: { introductionId?: string } }> => memberClient.post(`/introductions/${id}/${accept ? "accept" : "decline"}`).then((r) => r.data);
 export const withdrawIntroduction = (id: string) => memberClient.post(`/introductions/${id}/withdraw`).then((r) => r.data);
 export const endIntroduction = (id: string) => memberClient.post(`/introductions/${id}/end`).then((r) => r.data);

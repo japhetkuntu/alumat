@@ -27,8 +27,9 @@ public class IntroductionsController(IMemberIntroductionService introductions) :
 
     [HttpGet]
     [SwaggerOperation(Summary = "My conversations and requests", Description = "box = chats, incoming or sent.")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<IntroductionItemDto>>))]
-    public async Task<IActionResult> List([FromQuery] string box = "chats") => (await introductions.ListAsync(box, User.GetAccount())).ToActionResult();
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<IntroductionPageDto>))]
+    public async Task<IActionResult> List([FromQuery] string box = "chats", [FromQuery] string? cursor = null, [FromQuery] int limit = 25, [FromQuery] string? q = null)
+        => (await introductions.ListAsync(box, cursor, limit, q, User.GetAccount())).ToActionResult();
 
     [HttpGet("summary")]
     [SwaggerOperation(Summary = "Unread chats and waiting requests, for the menu badge")]
@@ -38,7 +39,8 @@ public class IntroductionsController(IMemberIntroductionService introductions) :
     [HttpGet("{id}")]
     [SwaggerOperation(Summary = "Open a conversation", Description = "Returns the messages, or only those after `after` when polling. Opening it marks it read.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<IntroductionDetailDto>))]
-    public async Task<IActionResult> Get(string id, [FromQuery] DateTime? after = null) => (await introductions.GetAsync(id, after, User.GetAccount())).ToActionResult();
+    public async Task<IActionResult> Get(string id, [FromQuery] DateTime? after = null, [FromQuery] DateTime? before = null, [FromQuery] int? limit = null)
+        => (await introductions.GetAsync(id, after, User.GetAccount(), before, limit)).ToActionResult();
 
     [HttpPost("{id}/accept")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]

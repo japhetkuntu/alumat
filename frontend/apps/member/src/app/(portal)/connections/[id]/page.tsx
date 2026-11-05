@@ -16,7 +16,7 @@ import {
   resumeIntroduction, unblockMember, withdrawIntroduction, type IntroCondition, type IntroDetail, type IntroMessage, type IntroPerson,
 } from "@/lib/member-api";
 import { IntroduceButton } from "@/components/member/introduce-button";
-import { mergeNewMessages, pollWhenOffline, useStreamConnected } from "@/lib/introduction-stream";
+import { mergeLatest, mergeNewMessages, prependOlder, pollWhenOffline, useStreamConnected } from "@/lib/introduction-stream";
 import { handleApiError } from "@/lib/api-client";
 
 const GROUP_GAP_MS = 5 * 60_000;
@@ -133,11 +133,15 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const dialogWasOpen = useRef(false);
   const seenCount = useRef(0);
   const first = useRef(true);
+  const older = useRef<HTMLDivElement>(null);
+  const anchor = useRef<{ height: number; top: number } | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const live = useStreamConnected();
   const { data, isLoading, isError } = useQuery<IntroDetail>({
     queryKey: ["intro", id],
-    queryFn: () => getIntroduction(id),
+    // A refresh brings in the newest page and keeps any older messages the reader has already scrolled back to.
+    queryFn: async () => mergeLatest(qc.getQueryData<IntroDetail>(["intro", id]), await getIntroduction(id)),
     // The live connection pushes changes. Only if it is down does this ask every few seconds.
     refetchInterval: (q) => (q.state.data?.canSend ? pollWhenOffline(live, 5_000) : false),
     retry: false,
@@ -213,6 +217,29 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const count = messages.length;
   const lastMine = count > 0 && messages[count - 1].mine;
 
+  // Scrolling to the top fetches the page before the oldest message on screen, one page at a time, never the whole history.
+  const hasOlder = !!data?.hasMoreBefore;
+  const loadOlder = useCallback(async () => {
+    const cur = qc.getQueryData<IntroDetail>(["intro", id]);
+    const el = scroller.current;
+    if (!cur || !cur.hasMoreBefore || !cur.messages.length || !el || anchor.current) return;
+    anchor.current = { height: el.scrollHeight, top: el.scrollTop };
+    setLoadingOlder(true);
+    try {
+      const page = await getIntroduction(id, undefined, cur.messages[0].createdAt);
+      qc.setQueryData<IntroDetail>(["intro", id], (old) => (old ? prependOlder(old, page) : old));
+    } catch { anchor.current = null; toast.error("Couldn't load earlier messages."); }
+    finally { setLoadingOlder(false); }
+  }, [qc, id]);
+
+  useEffect(() => {
+    const el = older.current;
+    if (!el || !hasOlder || loadingOlder) return;
+    const watch = new IntersectionObserver(([e]) => { if (e.isIntersecting) void loadOlder(); }, { root: scroller.current, rootMargin: "200px 0px 0px 0px" });
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [hasOlder, loadingOlder, loadOlder, count]);
+
   const toBottom = useCallback((smooth: boolean) => {
     const el = scroller.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
@@ -221,6 +248,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   // First paint lands at the latest message. After that, new messages follow along only if the reader is already at the bottom (or wrote them).
   useLayoutEffect(() => {
     if (count === seenCount.current) return;
+    if (anchor.current && scroller.current) {
+      // Older messages were added above: keep the reader looking at the same message instead of jumping to the top.
+      const el = scroller.current;
+      el.scrollTop = anchor.current.top + (el.scrollHeight - anchor.current.height);
+      anchor.current = null;
+      seenCount.current = count;
+      return;
+    }
     const added = count - seenCount.current;
     if (first.current && count > 0) { toBottom(false); first.current = false; }
     else if (atBottom || lastMine) toBottom(true);
@@ -320,6 +355,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto px-3 sm:px-5" aria-live="polite"
             onScroll={(e) => { const el = e.currentTarget; const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80; setAtBottom(near); if (near) setMissed(0); }}>
             <div className="flex min-h-full flex-col justify-end py-4">
+              {hasOlder && (
+                <div ref={older} className="flex h-10 items-center justify-center">
+                  {loadingOlder ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" role="status" aria-label="Loading earlier messages" />
+                    : <button type="button" onClick={() => void loadOlder()} className="text-[12px] font-semibold text-muted-foreground hover:text-foreground">Load earlier messages</button>}
+                </div>
+              )}
               <div className="mx-auto mb-5 max-w-sm space-y-2 text-center">
                 <p className="flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground"><Lock size={12} className="shrink-0" /> Private between you two. Messages are encrypted when sent and when stored. Administrators can&apos;t read this unless someone reports it. Never send money or passwords.</p>
                 {item.reason && !(messages.length === 0 && canSend) && <p className="rounded-xl bg-muted/60 px-3.5 py-2.5 text-[13px] italic leading-relaxed text-muted-foreground">{item.mine ? "Your note" : `${firstName}'s note`}: “{item.reason}”</p>}

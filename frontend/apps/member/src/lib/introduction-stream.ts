@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/lib/api-client";
-import { getIntroduction, getIntroSummary, type IntroDetail } from "@/lib/member-api";
+import { getIntroduction, getIntroSummary, type IntroDetail, type IntroMessage } from "@/lib/member-api";
 
 /**
  * One live connection for the whole portal. The server sends a tiny notice ("new message in X") the moment something happens, and
@@ -26,9 +26,33 @@ interface Notice { kind: string; introductionId: string }
 // A refresh that is already on its way covers a second notice that arrives meanwhile, so a burst makes one request, not many.
 const refresh = (qc: QueryClient, key: readonly unknown[]) => qc.invalidateQueries({ queryKey: key }, { cancelRefetch: false });
 
+const at = (m: IntroMessage) => new Date(m.createdAt).getTime();
+
+/** Joins messages by id, oldest first, so the same message never appears twice however many ways it arrived. */
+function joined(...groups: IntroMessage[][]): IntroMessage[] {
+  const byId = new Map<string, IntroMessage>();
+  for (const g of groups) for (const m of g) byId.set(m.id, m);
+  return [...byId.values()].sort((x, y) => at(x) - at(y) || x.id.localeCompare(y.id));
+}
+
+/**
+ * A fresh "newest page" arriving over a conversation the reader has already scrolled back through: keep the older messages they have loaded
+ * (and what is known about whether more exist), and bring in the new ones. Without this a refresh would throw their place in the history away.
+ */
+export function mergeLatest(prev: IntroDetail | undefined, fresh: IntroDetail): IntroDetail {
+  if (!prev || prev.messages.length === 0 || fresh.messages.length === 0) return prev && fresh.messages.length === 0 ? { ...fresh, messages: prev.messages, hasMoreBefore: prev.hasMoreBefore } : fresh;
+  const loadedOlder = at(prev.messages[0]) < at(fresh.messages[0]);
+  return { ...fresh, messages: joined(prev.messages, fresh.messages), hasMoreBefore: loadedOlder ? prev.hasMoreBefore : fresh.hasMoreBefore };
+}
+
+/** Adds an older page (scrolling up) in front of what is loaded. */
+export function prependOlder(prev: IntroDetail, older: IntroDetail): IntroDetail {
+  return { ...prev, messages: joined(older.messages, prev.messages), hasMoreBefore: older.hasMoreBefore };
+}
+
 const merging = new Map<string, { again: boolean; done: Promise<void> }>();
 
-/** Adds only the messages newer than the ones already on screen, instead of loading the whole conversation again. */
+/** Adds only the messages newer than the ones already on screen, instead of loading the whole conversation again. Keeps asking while more are waiting. */
 export function mergeNewMessages(qc: QueryClient, id: string): Promise<void> {
   const running = merging.get(id);
   if (running) { running.again = true; return running.done; }   // one more pass after this one, never a pile of them
@@ -39,13 +63,21 @@ export function mergeNewMessages(qc: QueryClient, id: string): Promise<void> {
         job.again = false;
         const cached = qc.getQueryData<IntroDetail>(["intro", id]);
         if (!cached) return;
-        const last = cached.messages[cached.messages.length - 1];
-        const fresh = await getIntroduction(id, last?.createdAt);
-        qc.setQueryData<IntroDetail>(["intro", id], (old) => {
-          if (!old) return fresh;
-          const known = new Set(old.messages.map((m) => m.id));
-          return { ...fresh, messages: [...old.messages, ...fresh.messages.filter((m) => !known.has(m.id))] };
-        });
+        let cursor = cached.messages[cached.messages.length - 1]?.createdAt;
+        if (!cursor) {
+          // Nothing on screen yet (a brand-new chat): the newest page is the whole thing.
+          const first = await getIntroduction(id);
+          qc.setQueryData<IntroDetail>(["intro", id], (old) => mergeLatest(old, first));
+          continue;
+        }
+        for (;;) {
+          const fresh = await getIntroduction(id, cursor);
+          qc.setQueryData<IntroDetail>(["intro", id], (old) => (old
+            ? { ...fresh, messages: joined(old.messages, fresh.messages), hasMoreBefore: old.hasMoreBefore }
+            : fresh));
+          if (!fresh.hasMoreAfter || fresh.messages.length === 0) break;
+          cursor = fresh.messages[fresh.messages.length - 1].createdAt;
+        }
       } while (job.again);
     } finally { merging.delete(id); }
   })();

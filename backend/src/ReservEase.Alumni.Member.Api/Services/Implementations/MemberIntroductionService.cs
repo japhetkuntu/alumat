@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -41,7 +42,27 @@ public class MemberIntroductionService(
     /// <summary>After a request is declined, how long before the same member can ask again.</summary>
     public const int AskAgainAfterDays = 30;
     public const int MessagesPerMinute = 20;
-    private const int ListLimit = 100, ThreadLimit = 200, ReportedMessages = 20;
+    private const int DefaultListPage = 25, MaxListPage = 50, DefaultThreadPage = 40, MaxThreadPage = 100, ReportedMessages = 20;
+
+    // A list cursor is the last row's activity time and id: it stays correct however much happens meanwhile, and costs the same on page 1 or page 500.
+    private static string EncodeCursor(Introduction i)
+        => Convert.ToBase64String(Encoding.UTF8.GetBytes($"{i.LastActivityAt.Ticks}|{i.Id}")).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    private static bool TryDecodeCursor(string? cursor, out DateTime at, out string id)
+    {
+        at = default; id = string.Empty;
+        if (string.IsNullOrWhiteSpace(cursor)) return false;
+        try
+        {
+            var b64 = cursor.Replace('-', '+').Replace('_', '/');
+            var text = Encoding.UTF8.GetString(Convert.FromBase64String(b64.PadRight(b64.Length + (4 - b64.Length % 4) % 4, '=')));
+            var cut = text.IndexOf('|');
+            if (cut <= 0 || !long.TryParse(text.AsSpan(0, cut), out var ticks) || ticks is < 0 or > 3_155_378_975_999_999_999L) return false;
+            at = new DateTime(ticks, DateTimeKind.Utc); id = text[(cut + 1)..];
+            return id.Length > 0;
+        }
+        catch { return false; }
+    }
 
     private const string NotTakingIntroductions = "This member isn't taking introductions right now.";
 
@@ -219,55 +240,89 @@ public class MemberIntroductionService(
         }
     }
 
-    public async Task<IApiResponse<List<IntroductionItemDto>>> ListAsync(string box, AuthData me)
+    /// <summary>The conversations a member has been blocked from or has blocked, either way, as the other member's id.</summary>
+    private async Task<(HashSet<string> IBlocked, HashSet<string> BlockedMe)> BlockSetsAsync(string me)
+    {
+        var blocks = (await blockRepo.GetAllAsync(b => b.BlockerId == me || b.BlockedId == me)).ToList();
+        return (blocks.Where(b => b.BlockerId == me).Select(b => b.BlockedId).ToHashSet(), blocks.Where(b => b.BlockedId == me).Select(b => b.BlockerId).ToHashSet());
+    }
+
+    private IQueryable<Introduction>? BoxQuery(string box, string me, List<string> apart) => box switch
+    {
+        "chats" => introRepo.GetQueryable(i => i.Status == IntroductionStatuses.Accepted && (i.RequesterId == me || i.RecipientId == me)
+            && !apart.Contains(i.RequesterId == me ? i.RecipientId : i.RequesterId)),
+        "archived" => introRepo.GetQueryable(i => (i.Status == IntroductionStatuses.Accepted || i.Status == IntroductionStatuses.Ended) && (i.RequesterId == me || i.RecipientId == me)
+            && (i.Status == IntroductionStatuses.Ended || apart.Contains(i.RequesterId == me ? i.RecipientId : i.RequesterId))),
+        "incoming" => introRepo.GetQueryable(i => i.Status == IntroductionStatuses.Pending && i.RecipientId == me && !apart.Contains(i.RequesterId)),
+        "sent" => introRepo.GetQueryable(i => (i.Status == IntroductionStatuses.Pending || i.Status == IntroductionStatuses.Declined) && i.RequesterId == me && !apart.Contains(i.RecipientId)),
+        _ => null,
+    };
+
+    public async Task<IApiResponse<IntroductionPageDto>> ListAsync(string box, string? cursor, int limit, string? search, AuthData me)
     {
         try
         {
-            var q = box switch
+            var take = Math.Clamp(limit <= 0 ? DefaultListPage : limit, 1, MaxListPage);
+            var (iBlocked, blockedMe) = await BlockSetsAsync(me.Id);
+            var apart = iBlocked.Union(blockedMe).ToList();
+            var meId = me.Id;
+            var query = BoxQuery(box, meId, apart);
+            if (query is null) return ApiResponseExtensions.ToBadRequestApiResponse<IntroductionPageDto>("Unknown list.");
+
+            // Searching by name: find the matching members first (a handful), then keep only the conversations with them.
+            var needle = search?.Trim().ToLowerInvariant();
+            if (!string.IsNullOrEmpty(needle))
             {
-                "chats" => introRepo.GetQueryable(i => (i.Status == IntroductionStatuses.Accepted || i.Status == IntroductionStatuses.Ended) && (i.RequesterId == me.Id || i.RecipientId == me.Id)),
-                "incoming" => introRepo.GetQueryable(i => i.Status == IntroductionStatuses.Pending && i.RecipientId == me.Id),
-                "sent" => introRepo.GetQueryable(i => (i.Status == IntroductionStatuses.Pending || i.Status == IntroductionStatuses.Declined) && i.RequesterId == me.Id),
-                _ => null,
-            };
-            if (q is null) return ApiResponseExtensions.ToBadRequestApiResponse<List<IntroductionItemDto>>("Unknown list.");
+                var ids = await memberRepo.GetQueryable(m => m.Status == "Active" && (m.FirstName + " " + m.LastName).ToLower().Contains(needle)).Select(m => m.Id).Take(300).ToListAsync();
+                query = query.Where(i => ids.Contains(i.RequesterId == meId ? i.RecipientId : i.RequesterId));
+            }
+            if (TryDecodeCursor(cursor, out var at, out var afterId))
+                query = query.Where(i => i.LastActivityAt < at || (i.LastActivityAt == at && i.Id.CompareTo(afterId) < 0));
 
-            var rows = await q.OrderByDescending(i => i.LastMessageAt ?? i.RespondedAt ?? i.CreatedAt).Take(ListLimit).ToListAsync();
-            var people = await PeopleAsync(rows.Select(i => OtherId(i, me.Id)));
-            var blocks = (await blockRepo.GetAllAsync(b => b.BlockerId == me.Id || b.BlockedId == me.Id)).ToList();
-            var iBlocked = blocks.Where(b => b.BlockerId == me.Id).Select(b => b.BlockedId).ToHashSet();
-            var blockedMe = blocks.Where(b => b.BlockedId == me.Id).Select(b => b.BlockerId).ToHashSet();
+            var rows = await query.OrderByDescending(i => i.LastActivityAt).ThenByDescending(i => i.Id).Take(take + 1).ToListAsync();
+            var more = rows.Count > take;
+            if (more) rows.RemoveAt(take);
 
-            // Someone who has left drops out of the list instead of showing a broken row. Existing conversations stay visible when blocked
-            // (the member can unblock from inside), and a request from or to someone blocked simply is not listed.
+            var people = await PeopleAsync(rows.Select(i => OtherId(i, meId)));
             // For requests waiting on me: did the two already have a conversation that was ended? Accepting then reopens it.
-            var endedWith = box == "incoming"
-                ? (await introRepo.GetAllAsync(i => i.Status == IntroductionStatuses.Ended && (i.RequesterId == me.Id || i.RecipientId == me.Id)))
-                    .GroupBy(i => OtherId(i, me.Id)).ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.UpdatedAt ?? i.CreatedAt).First().Id)
-                : new Dictionary<string, string>();
+            var endedWith = new Dictionary<string, string>();
+            if (box == "incoming" && rows.Count > 0)
+            {
+                var others = rows.Select(i => OtherId(i, meId)).ToList();
+                endedWith = (await introRepo.GetAllAsync(i => i.Status == IntroductionStatuses.Ended
+                        && ((i.RequesterId == meId && others.Contains(i.RecipientId)) || (i.RecipientId == meId && others.Contains(i.RequesterId)))))
+                    .GroupBy(i => OtherId(i, meId)).ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.LastActivityAt).First().Id);
+            }
 
+            // Someone who has left drops out instead of showing a broken row; the cursor still moves past them.
             var items = rows
-                .Where(i => people.TryGetValue(OtherId(i, me.Id), out var o) && o.Status == "Active")
-                .Where(i => box == "chats" || (!iBlocked.Contains(OtherId(i, me.Id)) && !blockedMe.Contains(OtherId(i, me.Id))))
-                .Select(i => Item(i, me.Id, people[OtherId(i, me.Id)], ConditionOf(i, iBlocked.Contains(OtherId(i, me.Id)), blockedMe.Contains(OtherId(i, me.Id))))
-                    with { ReopensIntroductionId = endedWith.GetValueOrDefault(OtherId(i, me.Id)) })
+                .Where(i => people.TryGetValue(OtherId(i, meId), out var o) && o.Status == "Active")
+                .Select(i => Item(i, meId, people[OtherId(i, meId)], ConditionOf(i, iBlocked.Contains(OtherId(i, meId)), blockedMe.Contains(OtherId(i, meId))))
+                    with { ReopensIntroductionId = endedWith.GetValueOrDefault(OtherId(i, meId)) })
                 .ToList();
-            return items.ToOkApiResponse();
+            return new IntroductionPageDto(items, more ? EncodeCursor(rows[^1]) : null).ToOkApiResponse();
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error listing introductions ({Box}) for {MemberId}", box, me.Id);
-            return ApiResponseExtensions.ToServerErrorApiResponse<List<IntroductionItemDto>>("Something went wrong. Please try again.");
+            return ApiResponseExtensions.ToServerErrorApiResponse<IntroductionPageDto>("Something went wrong. Please try again.");
         }
     }
 
+    /// <summary>Three COUNT queries, however many conversations a member has: nothing is loaded into memory to be counted.</summary>
     public async Task<IApiResponse<IntroductionSummaryDto>> GetSummaryAsync(AuthData me)
     {
         try
         {
-            var incoming = await introRepo.CountAsync(i => i.Status == IntroductionStatuses.Pending && i.RecipientId == me.Id);
-            var chats = await introRepo.GetQueryable(i => i.Status == IntroductionStatuses.Accepted && (i.RequesterId == me.Id || i.RecipientId == me.Id) && i.LastMessageAt != null && i.LastMessageSenderId != me.Id).ToListAsync();
-            return new IntroductionSummaryDto(chats.Count(i => IsUnread(i, me.Id)), incoming).ToOkApiResponse();
+            var meId = me.Id;
+            var (iBlocked, blockedMe) = await BlockSetsAsync(meId);
+            var apart = iBlocked.Union(blockedMe).ToList();
+            var incoming = await BoxQuery("incoming", meId, apart)!.CountAsync();
+            var archived = await BoxQuery("archived", meId, apart)!.CountAsync();
+            var unread = await BoxQuery("chats", meId, apart)!.CountAsync(i => i.LastMessageAt != null && i.LastMessageSenderId != meId
+                && ((i.RequesterId == meId && (i.RequesterReadAt == null || i.LastMessageAt > i.RequesterReadAt))
+                    || (i.RecipientId == meId && (i.RecipientReadAt == null || i.LastMessageAt > i.RecipientReadAt))));
+            return new IntroductionSummaryDto(unread, incoming, archived).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -276,7 +331,7 @@ public class MemberIntroductionService(
         }
     }
 
-    public async Task<IApiResponse<IntroductionDetailDto>> GetAsync(string id, DateTime? after, AuthData me)
+    public async Task<IApiResponse<IntroductionDetailDto>> GetAsync(string id, DateTime? after, AuthData me, DateTime? before = null, int? limit = null)
     {
         try
         {
@@ -297,21 +352,37 @@ public class MemberIntroductionService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<IntroductionDetailDto>("This conversation isn't available.");
 
             var messages = new List<IntroductionMessageDto>();
+            bool hasMoreBefore = false, hasMoreAfter = false;
             if (intro.Status is IntroductionStatuses.Accepted or IntroductionStatuses.Ended)
             {
-                var cut = after;
-                var rows = await messageRepo.GetQueryable(m => m.IntroductionId == id && (cut == null || m.CreatedAt > cut))
-                    .OrderByDescending(m => m.CreatedAt).Take(ThreadLimit).ToListAsync();
-                messages = rows.OrderBy(m => m.CreatedAt).Select(m => new IntroductionMessageDto(m.Id, m.SenderId == me.Id, Read(m.Body, MessageContext(id, m.Id)), m.CreatedAt)).ToList();
+                // Only the page asked for is read and decrypted: the newest, the one before a given message, or what is newer than one.
+                var size = Math.Clamp(limit ?? DefaultThreadPage, 1, MaxThreadPage);
+                var thread = messageRepo.GetQueryable(m => m.IntroductionId == id);
+                List<IntroductionMessage> rows;
+                if (after is not null)
+                {
+                    rows = await thread.Where(m => m.CreatedAt > after).OrderBy(m => m.CreatedAt).Take(MaxThreadPage + 1).ToListAsync();
+                    hasMoreAfter = rows.Count > MaxThreadPage;
+                    if (hasMoreAfter) rows.RemoveAt(MaxThreadPage);
+                }
+                else
+                {
+                    var older = before is null ? thread : thread.Where(m => m.CreatedAt < before);
+                    rows = await older.OrderByDescending(m => m.CreatedAt).Take(size + 1).ToListAsync();
+                    hasMoreBefore = rows.Count > size;
+                    if (hasMoreBefore) rows.RemoveAt(size);
+                    rows.Reverse();
+                }
+                messages = rows.Select(m => new IntroductionMessageDto(m.Id, m.SenderId == me.Id, Read(m.Body, MessageContext(id, m.Id)), m.CreatedAt)).ToList();
 
-                // Opening the conversation marks it read, but only writes when there is something new to mark.
-                if (IsUnread(intro, me.Id))
+                // Opening the conversation marks it read, but only writes when there is something new to mark, and loading older pages is not "opening".
+                if (before is null && IsUnread(intro, me.Id))
                 {
                     if (intro.RequesterId == me.Id) intro.RequesterReadAt = DateTime.UtcNow; else intro.RecipientReadAt = DateTime.UtcNow;
                     await introRepo.UpdateAsync(intro);
                     if (!iBlocked && !blockedMe) Tell(otherId, "read", id);   // so their "Seen" appears; never to or from someone blocked
                 }
-                await ClearNoticesAsync(id, me.Id);
+                if (before is null && (after is null || messages.Count > 0)) await ClearNoticesAsync(id, me.Id);
             }
 
             if (intro.Status == IntroductionStatuses.Pending && intro.RecipientId == me.Id) await ClearNoticesAsync(id, me.Id);
@@ -320,7 +391,7 @@ public class MemberIntroductionService(
             var reopens = intro.Status == IntroductionStatuses.Pending && intro.RecipientId == me.Id ? (await EndedBetweenAsync(me.Id, otherId))?.Id : null;
             var item = Item(intro, me.Id, other, condition) with { Unread = wasUnread, ReopensIntroductionId = reopens };
             var theirRead = (iBlocked || blockedMe) ? null : intro.RequesterId == me.Id ? intro.RecipientReadAt : intro.RequesterReadAt;
-            return new IntroductionDetailDto(item, intro.Status == IntroductionStatuses.Accepted && condition == IntroductionConditions.Open, messages, theirRead).ToOkApiResponse();
+            return new IntroductionDetailDto(item, intro.Status == IntroductionStatuses.Accepted && condition == IntroductionConditions.Open, messages, theirRead, hasMoreBefore, hasMoreAfter).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -354,6 +425,7 @@ public class MemberIntroductionService(
                 // so it is retired rather than becoming a second conversation with the same person.
                 earlier.Status = IntroductionStatuses.Accepted;
                 earlier.EndedById = null;
+                earlier.LastActivityAt = DateTime.UtcNow;
                 earlier.UpdatedBy = me.Id;
                 await introRepo.UpdateAsync(earlier);
                 intro.Status = IntroductionStatuses.Withdrawn;
@@ -364,6 +436,7 @@ public class MemberIntroductionService(
                 intro.Status = accept ? IntroductionStatuses.Accepted : IntroductionStatuses.Declined;
             }
             intro.RespondedAt = DateTime.UtcNow;
+            intro.LastActivityAt = intro.RespondedAt.Value;
             intro.UpdatedBy = me.Id;
             await introRepo.UpdateAsync(intro);
 
@@ -411,6 +484,7 @@ public class MemberIntroductionService(
             if (intro.Status != IntroductionStatuses.Accepted) return ApiResponseExtensions.ToConflictApiResponse<object>("This conversation has already ended.");
             intro.Status = IntroductionStatuses.Ended;
             intro.EndedById = me.Id;
+            intro.LastActivityAt = DateTime.UtcNow;
             intro.UpdatedBy = me.Id;
             await introRepo.UpdateAsync(intro);
             Tell(OtherId(intro, me.Id), "changed", id);
@@ -445,6 +519,7 @@ public class MemberIntroductionService(
 
             intro.Status = IntroductionStatuses.Accepted;
             intro.EndedById = null;
+            intro.LastActivityAt = DateTime.UtcNow;
             intro.UpdatedBy = me.Id;
             await introRepo.UpdateAsync(intro);
             Tell(otherId, "changed", id);
@@ -488,6 +563,7 @@ public class MemberIntroductionService(
             await messageRepo.AddAsync(message);
 
             intro.LastMessageAt = message.CreatedAt;
+            intro.LastActivityAt = message.CreatedAt;
             intro.LastMessageSenderId = me.Id;
             intro.LastMessagePreview = protector.Protect(text.Length > 80 ? text[..80].TrimEnd() + "…" : text, FieldContext(id, PreviewField));
             if (intro.RequesterId == me.Id) intro.RequesterReadAt = message.CreatedAt; else intro.RecipientReadAt = message.CreatedAt;

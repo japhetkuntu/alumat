@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { formatDistanceToNowStrict, isToday, isYesterday, format } from "date-fns";
 import { Button, ChevronDown, MessageCircle, UserAvatar, cn } from "@alumni/ui";
-import { getIntroductions, getIntroSummary, type IntroCondition, type IntroItem } from "@/lib/member-api";
+import { getIntroductions, getIntroSummary, type IntroBox, type IntroCondition, type IntroDetail, type IntroItem } from "@/lib/member-api";
 import { pollWhenOffline, useStreamConnected } from "@/lib/introduction-stream";
 
 type Tab = "chats" | "requests";
+const PAGE = 25;
 
 /** "now", "5m", "3h", "Yesterday", or a short date: the way a chat list tells time. */
 function stamp(iso: string) {
@@ -20,6 +21,41 @@ function stamp(iso: string) {
 }
 
 const CONDITION_LABEL: Partial<Record<IntroCondition, string>> = { ended: "Ended", blocked: "Blocked", unavailable: "Unavailable" };
+
+/**
+ * One list, read a page at a time: the first page is small and fast however many connections there are, and the next page loads as the
+ * reader nears the bottom. While the live connection is up nothing polls; if it drops the list falls back to slow polling.
+ */
+function usePagedIntros(box: IntroBox, search: string, enabled: boolean, live: boolean, pollMs: number) {
+  const q = useInfiniteQuery({
+    queryKey: ["intros", box, search],
+    queryFn: ({ pageParam }) => getIntroductions(box, { cursor: pageParam, q: search, limit: PAGE }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled,
+    refetchInterval: pollWhenOffline(live, pollMs),
+  });
+  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+  return { ...q, items, hasMore: !!q.hasNextPage, more: useCallback(() => { if (q.hasNextPage && !q.isFetchingNextPage) void q.fetchNextPage(); }, [q]) };
+}
+
+/** An invisible marker at the bottom of a list: when it scrolls into view (a little early) the next page is requested. */
+function LoadMore({ hasMore, loading, onMore, root }: { hasMore: boolean; loading: boolean; onMore: () => void; root: React.RefObject<HTMLElement | null> }) {
+  const marker = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = marker.current;
+    if (!el || !hasMore || loading) return;
+    const watch = new IntersectionObserver(([e]) => { if (e.isIntersecting) onMore(); }, { root: root.current, rootMargin: "320px" });
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [hasMore, loading, onMore, root]);
+  if (!hasMore) return null;
+  return (
+    <div ref={marker} className="flex h-12 items-center justify-center" aria-live="polite">
+      {loading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" role="status" aria-label="Loading more" />}
+    </div>
+  );
+}
 
 function Row({ item, active, children }: { item: IntroItem; active: boolean; children: React.ReactNode }) {
   return (
@@ -33,27 +69,39 @@ function Row({ item, active, children }: { item: IntroItem; active: boolean; chi
   );
 }
 
+const ListSkeleton = () => <div className="space-y-3 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-muted" />)}</div>;
+
 export function ConversationList({ activeId }: { activeId?: string }) {
   const params = useSearchParams();
   const [tab, setTab] = useState<Tab>(params.get("tab") === "requests" ? "requests" : "chats");
   const [showArchived, setShowArchived] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [search, setSearch] = useState("");
+  const scroller = useRef<HTMLDivElement>(null);
 
-  // While the live connection is up nothing here polls; if it drops, these fall back to slow polling until it returns.
+  // Search waits for a pause in typing, so a name is one request, not one per letter.
+  useEffect(() => { const t = window.setTimeout(() => setSearch(typed.trim()), 250); return () => window.clearTimeout(t); }, [typed]);
+
   const live = useStreamConnected();
   const summary = useQuery({ queryKey: ["intro-summary"], queryFn: getIntroSummary, refetchInterval: pollWhenOffline(live, 20_000), staleTime: 10_000 });
-  const chats = useQuery({ queryKey: ["intros", "chats"], queryFn: () => getIntroductions("chats"), refetchInterval: pollWhenOffline(live, 15_000) });
-  // Requests are only listed while that tab is open; the badge count comes from the summary.
-  const incoming = useQuery({ queryKey: ["intros", "incoming"], queryFn: () => getIntroductions("incoming"), refetchInterval: pollWhenOffline(live, 30_000), enabled: tab === "requests" });
-  const sent = useQuery({ queryKey: ["intros", "sent"], queryFn: () => getIntroductions("sent"), refetchInterval: pollWhenOffline(live, 30_000), enabled: tab === "requests" });
+  // If the open conversation is an ended or blocked one, its group starts open so it never seems to have vanished from the list.
+  const openDetail = useQuery<IntroDetail>({ queryKey: ["intro", activeId], queryFn: skipToken });
+  const activeIsArchived = !!openDetail.data && (openDetail.data.item.condition ?? "open") !== "open";
+  const archiveOpen = showArchived || activeIsArchived;
 
-  const unread = summary.data?.unreadChats ?? 0;
-  const waiting = summary.data?.incomingRequests ?? 0;
+  const chats = usePagedIntros("chats", search, tab === "chats", live, 15_000);
+  const archived = usePagedIntros("archived", "", tab === "chats" && archiveOpen, live, 30_000);
+  const incoming = usePagedIntros("incoming", "", tab === "requests", live, 30_000);
+  const sent = usePagedIntros("sent", "", tab === "requests", live, 30_000);
+
+  const unread = summary.data?.unreadChats ?? 0, waiting = summary.data?.incomingRequests ?? 0, archivedCount = summary.data?.archivedChats ?? 0;
+  const searchable = chats.items.length >= 8 || chats.hasMore || !!search || !!typed;
 
   const tabBtn = (t: Tab, label: string, count: number) => (
     <button type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
       className={cn("relative flex flex-1 items-center justify-center gap-2 py-3 text-[13.5px] font-semibold transition-colors", tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>
       {label}
-      {count > 0 && <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[12px] font-bold leading-none text-white" style={{ background: "var(--accent)" }}>{count}</span>}
+      {count > 0 && <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[12px] font-bold leading-none text-white" style={{ background: "var(--accent)" }}>{count > 99 ? "99+" : count}</span>}
       {tab === t && <span className="absolute inset-x-4 bottom-0 h-[2.5px] rounded-full" style={{ background: "var(--primary)" }} />}
     </button>
   );
@@ -67,6 +115,23 @@ export function ConversationList({ activeId }: { activeId?: string }) {
     </div>
   );
 
+  const chatRow = (c: IntroItem) => (
+    <Row key={c.id} item={c} active={c.id === activeId}>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className={cn("truncate text-[14.5px]", c.unread ? "font-bold" : "font-semibold")}>{c.other.name}</p>
+          {c.lastMessageAt && <span className={cn("shrink-0 text-[12px]", c.unread ? "font-semibold text-foreground" : "text-muted-foreground")}>{stamp(c.lastMessageAt)}</span>}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <p className={cn("truncate text-[13px]", c.unread ? "font-medium text-foreground" : "text-muted-foreground")}>
+            {c.lastMessagePreview ? `${c.lastMessageMine ? "You: " : ""}${c.lastMessagePreview}` : c.other.headline ?? "Say hello"}
+          </p>
+          {c.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: "var(--accent)" }} aria-label="Unread" />}
+        </div>
+      </div>
+    </Row>
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="px-4 pb-1 pt-4 lg:pt-5">
@@ -75,92 +140,95 @@ export function ConversationList({ activeId }: { activeId?: string }) {
       </div>
       <div role="tablist" className="flex border-b" style={{ borderColor: "var(--border)" }}>{tabBtn("chats", "Chats", unread)}{tabBtn("requests", "Requests", waiting)}</div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {tab === "chats" && (() => {
-          const all = chats.data ?? [];
-          const live = all.filter((c) => (c.condition ?? "open") === "open");
-          const archived = all.filter((c) => (c.condition ?? "open") !== "open");
-          // Keep the open one in view: if the conversation being read is in the archive, that group starts open.
-          const archiveOpen = showArchived || archived.some((c) => c.id === activeId);
-          if (chats.isLoading) return <div className="space-y-3 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-muted" />)}</div>;
-          if (all.length === 0) return empty("No conversations yet", "Find someone in the directory and ask for an introduction. Your chat opens here once they accept.");
-          return (
-            <div>
-              {live.length === 0 && <p className="px-6 py-8 text-center text-[13.5px] text-muted-foreground">No open conversations right now.</p>}
-              <ul className="divide-y" style={{ borderColor: "var(--border)" }}>
-                {live.map((c) => (
-                  <Row key={c.id} item={c} active={c.id === activeId}>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <p className={cn("truncate text-[14.5px]", c.unread ? "font-bold" : "font-semibold")}>{c.other.name}</p>
-                        {c.lastMessageAt && <span className={cn("shrink-0 text-[12px]", c.unread ? "font-semibold text-foreground" : "text-muted-foreground")}>{stamp(c.lastMessageAt)}</span>}
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className={cn("truncate text-[13px]", c.unread ? "font-medium text-foreground" : "text-muted-foreground")}>
-                          {c.lastMessagePreview ? `${c.lastMessageMine ? "You: " : ""}${c.lastMessagePreview}` : c.other.headline ?? "Say hello"}
-                        </p>
-                        {c.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: "var(--accent)" }} aria-label="Unread" />}
-                      </div>
-                    </div>
-                  </Row>
-                ))}
-              </ul>
-              {archived.length > 0 && (
-                <div className="border-t" style={{ borderColor: "var(--border)" }}>
-                  <button type="button" aria-expanded={archiveOpen} onClick={() => setShowArchived((v) => !v)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
-                    <span>Ended and blocked · {archived.length}</span>
-                    <ChevronDown size={14} className={cn("transition-transform", archiveOpen && "rotate-180")} />
-                  </button>
-                  {archiveOpen && (
-                    <ul className="divide-y animate-in fade-in slide-in-from-top-1 duration-200" style={{ borderColor: "var(--border)" }}>
-                      {archived.map((c) => (
-                        <Row key={c.id} item={c} active={c.id === activeId}>
-                          <div className="min-w-0 flex-1 opacity-80">
-                            <div className="flex items-baseline justify-between gap-2">
-                              <p className="truncate text-[14.5px] font-semibold">{c.other.name}</p>
-                              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">{CONDITION_LABEL[c.condition ?? "open"]}</span>
-                            </div>
-                            <p className="truncate text-[13px] text-muted-foreground">
-                              {c.condition === "ended" && c.endedByMe ? "You ended this. Tap to resume." : c.lastMessagePreview ? `${c.lastMessageMine ? "You: " : ""}${c.lastMessagePreview}` : c.other.headline ?? ""}
-                            </p>
-                          </div>
-                        </Row>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
+        {tab === "chats" && (
+          <div>
+            {searchable && (
+              <div className="sticky top-0 z-10 border-b bg-background/95 px-3 py-2 backdrop-blur" style={{ borderColor: "var(--border)" }}>
+                <input type="search" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Search your connections" aria-label="Search your connections"
+                  className="h-9 w-full rounded-full border bg-muted/40 px-4 text-[13.5px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:bg-background" style={{ borderColor: "var(--border)" }} />
+              </div>
+            )}
+            {chats.isLoading ? <ListSkeleton />
+              : chats.items.length === 0 && !search && archivedCount === 0 ? empty("No conversations yet", "Find someone in the directory and ask for an introduction. Your chat opens here once they accept.")
+              : (
+                <>
+                  {chats.items.length === 0 && <p className="px-6 py-8 text-center text-[13.5px] text-muted-foreground">{search ? `No one called “${search}”.` : "No open conversations right now."}</p>}
+                  <ul className="divide-y" style={{ borderColor: "var(--border)" }}>{chats.items.map(chatRow)}</ul>
+                  <LoadMore hasMore={chats.hasMore} loading={chats.isFetchingNextPage} onMore={chats.more} root={scroller} />
+                </>
               )}
-            </div>
-          );
-        })()}
+
+            {archivedCount > 0 && !search && (
+              <div className="border-t" style={{ borderColor: "var(--border)" }}>
+                <button type="button" aria-expanded={archiveOpen} onClick={() => setShowArchived((v) => !v)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
+                  <span>Ended and blocked · {archivedCount}</span>
+                  <ChevronDown size={14} className={cn("transition-transform", archiveOpen && "rotate-180")} />
+                </button>
+                {archiveOpen && (
+                  archived.isLoading ? <ListSkeleton /> : (
+                    <>
+                      <ul className="divide-y animate-in fade-in slide-in-from-top-1 duration-200" style={{ borderColor: "var(--border)" }}>
+                        {archived.items.map((c) => (
+                          <Row key={c.id} item={c} active={c.id === activeId}>
+                            <div className="min-w-0 flex-1 opacity-80">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <p className="truncate text-[14.5px] font-semibold">{c.other.name}</p>
+                                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">{CONDITION_LABEL[c.condition ?? "open"]}</span>
+                              </div>
+                              <p className="truncate text-[13px] text-muted-foreground">
+                                {c.condition === "ended" && c.endedByMe ? "You ended this. Tap to resume." : c.lastMessagePreview ? `${c.lastMessageMine ? "You: " : ""}${c.lastMessagePreview}` : c.other.headline ?? ""}
+                              </p>
+                            </div>
+                          </Row>
+                        ))}
+                      </ul>
+                      <LoadMore hasMore={archived.hasMore} loading={archived.isFetchingNextPage} onMore={archived.more} root={scroller} />
+                    </>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {tab === "requests" && (
           <div className="pb-6">
             <h2 className="px-4 pb-1 pt-4 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Waiting for you</h2>
             {incoming.isLoading ? <div className="p-4"><div className="h-14 animate-pulse rounded-xl bg-muted" /></div>
-              : (incoming.data ?? []).length === 0 ? <p className="px-4 py-2 text-[13.5px] text-muted-foreground">Nobody is waiting on you.</p>
-              : <ul>{incoming.data!.map((r) => (
-                <Row key={r.id} item={r} active={r.id === activeId}>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2"><p className="truncate text-[14.5px] font-bold">{r.other.name}</p><span className="shrink-0 text-[12px] text-muted-foreground">{stamp(r.createdAt)}</span></div>
-                    {r.reopensIntroductionId && <p className="text-[11.5px] font-semibold text-primary">Wants to pick your chat back up</p>}
-                    <p className="line-clamp-2 text-[13px] leading-snug text-muted-foreground">{r.reason}</p>
-                  </div>
-                </Row>
-              ))}</ul>}
+              : incoming.items.length === 0 ? <p className="px-4 py-2 text-[13.5px] text-muted-foreground">Nobody is waiting on you.</p>
+              : (
+                <>
+                  <ul>{incoming.items.map((r) => (
+                    <Row key={r.id} item={r} active={r.id === activeId}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2"><p className="truncate text-[14.5px] font-bold">{r.other.name}</p><span className="shrink-0 text-[12px] text-muted-foreground">{stamp(r.createdAt)}</span></div>
+                        {r.reopensIntroductionId && <p className="text-[11.5px] font-semibold text-primary">Wants to pick your chat back up</p>}
+                        <p className="line-clamp-2 text-[13px] leading-snug text-muted-foreground">{r.reason}</p>
+                      </div>
+                    </Row>
+                  ))}</ul>
+                  <LoadMore hasMore={incoming.hasMore} loading={incoming.isFetchingNextPage} onMore={incoming.more} root={scroller} />
+                </>
+              )}
 
             <h2 className="px-4 pb-1 pt-6 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">You asked</h2>
             {sent.isLoading ? <div className="p-4"><div className="h-14 animate-pulse rounded-xl bg-muted" /></div>
-              : (sent.data ?? []).length === 0 ? <p className="px-4 py-2 text-[13.5px] text-muted-foreground">You haven&apos;t asked anyone yet. Open the <Link href="/directory" className="font-semibold underline underline-offset-4">directory</Link> to find someone.</p>
-              : <ul>{sent.data!.map((r) => (
-                <Row key={r.id} item={r} active={r.id === activeId}>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2"><p className="truncate text-[14.5px] font-semibold">{r.other.name}</p><span className="shrink-0 text-[12px] text-muted-foreground">{stamp(r.createdAt)}</span></div>
-                    <p className="truncate text-[13px] text-muted-foreground">No reply yet</p>
-                  </div>
-                </Row>
-              ))}</ul>}
+              : sent.items.length === 0 ? <p className="px-4 py-2 text-[13.5px] text-muted-foreground">You haven&apos;t asked anyone yet. Open the <Link href="/directory" className="font-semibold underline underline-offset-4">directory</Link> to find someone.</p>
+              : (
+                <>
+                  <ul>{sent.items.map((r) => (
+                    <Row key={r.id} item={r} active={r.id === activeId}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2"><p className="truncate text-[14.5px] font-semibold">{r.other.name}</p><span className="shrink-0 text-[12px] text-muted-foreground">{stamp(r.createdAt)}</span></div>
+                        <p className="truncate text-[13px] text-muted-foreground">No reply yet</p>
+                      </div>
+                    </Row>
+                  ))}</ul>
+                  <LoadMore hasMore={sent.hasMore} loading={sent.isFetchingNextPage} onMore={sent.more} root={scroller} />
+                </>
+              )}
           </div>
         )}
       </div>

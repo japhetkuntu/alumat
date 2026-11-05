@@ -26,9 +26,11 @@ public class IntroductionServiceTests
     /// <summary>The same set-up for the encryption tests, which live in their own file.</summary>
     public sealed class RigAccess
     {
-        private readonly Rig _rig = new();
+        private readonly Rig _rig;
+        public RigAccess(IMessageProtector? protector = null) { _rig = new Rig(protector); }
         public string DbName => _rig.DbName;
         public InMemoryIntroductionEvents Events => _rig.Events;
+        public IMessageProtector Protector => _rig.Protector;
         public AuthData Ama => _rig.Ama;
         public AuthData Kofi => _rig.Kofi;
         public MemberIntroductionService Service => _rig.Service;
@@ -43,11 +45,12 @@ public class IntroductionServiceTests
         public AuthData Ama { get; } = new() { Id = "ama", FirstName = "Ama", LastName = "Mensah", Email = "ama@x.com" };
         public AuthData Kofi { get; } = new() { Id = "kofi", FirstName = "Kofi", LastName = "Boateng", Email = "kofi@x.com" };
         public MemberIntroductionService Service { get; private set; } = null!;
-        public IMessageProtector Protector { get; } = MessageEncryptionTests.NewProtector();
+        public IMessageProtector Protector { get; }
         public InMemoryIntroductionEvents Events { get; } = new();
 
-        public Rig()
+        public Rig(IMessageProtector? protector = null)
         {
+            Protector = protector ?? MessageEncryptionTests.NewProtector();
             using var db = TestDb.Create(DbName, Tenant);
             foreach (var (id, first, last) in new[] { ("ama", "Ama", "Mensah"), ("kofi", "Kofi", "Boateng"), ("esi", "Esi", "Owusu") })
                 db.Add(new MemberEntity { Id = id, InstitutionId = Tenant, FirstName = first, LastName = last, Email = $"{id}@x.com", Status = "Active", GraduationYear = 2014 });
@@ -142,12 +145,12 @@ public class IntroductionServiceTests
         var id = (await rig.Service.RequestAsync(new("kofi", Note), rig.Ama)).Data!.IntroductionId!;
         Assert.True((await rig.Service.RespondAsync(id, false, rig.Kofi)).Succeeded());
 
-        var sent = (await rig.Service.ListAsync("sent", rig.Ama)).Data!;
+        var sent = (await rig.Service.ListAsync("sent", null, 25, null, rig.Ama)).Data!.Items;
         Assert.Equal("Pending", Assert.Single(sent).Status);                       // not "Declined"
         Assert.Equal("pending", (await rig.Service.GetStateAsync("kofi", rig.Ama)).Data!.State);
         Assert.False((await rig.Service.RequestAsync(new("kofi", Note), rig.Ama)).Succeeded());
         Assert.Equal(1, rig.Notices);                                              // only the original request was announced
-        Assert.Empty((await rig.Service.ListAsync("incoming", rig.Kofi)).Data!);
+        Assert.Empty((await rig.Service.ListAsync("incoming", null, 25, null, rig.Kofi)).Data!.Items);
     }
 
     [Fact]
@@ -187,7 +190,7 @@ public class IntroductionServiceTests
         Assert.Equal(before + 1, rig.Notices);                                       // the first unread message only
 
         Assert.Equal(1, (await rig.Service.GetSummaryAsync(rig.Kofi)).Data!.UnreadChats);
-        Assert.True(Assert.Single((await rig.Service.ListAsync("chats", rig.Kofi)).Data!).Unread);
+        Assert.True(Assert.Single((await rig.Service.ListAsync("chats", null, 25, null, rig.Kofi)).Data!.Items).Unread);
         Assert.Equal(0, (await rig.Service.GetSummaryAsync(rig.Ama)).Data!.UnreadChats);   // your own messages are never unread to you
 
         var opened = (await rig.Service.GetAsync(id, null, rig.Kofi)).Data!;
@@ -219,7 +222,7 @@ public class IntroductionServiceTests
         await rig.Service.BlockAsync("ama", rig.Kofi);
 
         // Kofi, who blocked, still has the conversation in his list and can read it, but cannot send.
-        var mine = Assert.Single((await rig.Service.ListAsync("chats", rig.Kofi)).Data!);
+        var mine = Assert.Single((await rig.Service.ListAsync("archived", null, 25, null, rig.Kofi)).Data!.Items);
         Assert.Equal("blocked", mine.Condition);
         var open = (await rig.Service.GetAsync(id, null, rig.Kofi)).Data!;
         Assert.False(open.CanSend);
@@ -232,7 +235,7 @@ public class IntroductionServiceTests
         await rig.Service.UnblockAsync("ama", rig.Kofi);
         Assert.True((await rig.Service.GetAsync(id, null, rig.Kofi)).Data!.CanSend);
         Assert.True((await rig.Service.SendMessageAsync(id, "back", rig.Kofi)).Succeeded());
-        Assert.Equal("open", Assert.Single((await rig.Service.ListAsync("chats", rig.Ama)).Data!).Condition);
+        Assert.Equal("open", Assert.Single((await rig.Service.ListAsync("chats", null, 25, null, rig.Ama)).Data!.Items).Condition);
     }
 
     [Fact]
@@ -243,7 +246,7 @@ public class IntroductionServiceTests
         await rig.Service.SendMessageAsync(id, "hello", rig.Ama);
         await rig.Service.BlockAsync("ama", rig.Kofi);
 
-        var theirs = Assert.Single((await rig.Service.ListAsync("chats", rig.Ama)).Data!);
+        var theirs = Assert.Single((await rig.Service.ListAsync("archived", null, 25, null, rig.Ama)).Data!.Items);
         Assert.Equal("unavailable", theirs.Condition);                   // not "blocked"
         var view = (await rig.Service.GetAsync(id, null, rig.Ama)).Data!;
         Assert.False(view.CanSend);
@@ -279,8 +282,8 @@ public class IntroductionServiceTests
         var rig = new Rig();
         var id = (await rig.Service.RequestAsync(new("kofi", Note), rig.Ama)).Data!.IntroductionId!;
         await rig.Service.BlockAsync("ama", rig.Kofi);
-        Assert.Empty((await rig.Service.ListAsync("incoming", rig.Kofi)).Data!);
-        Assert.Empty((await rig.Service.ListAsync("sent", rig.Ama)).Data!);
+        Assert.Empty((await rig.Service.ListAsync("incoming", null, 25, null, rig.Kofi)).Data!.Items);
+        Assert.Empty((await rig.Service.ListAsync("sent", null, 25, null, rig.Ama)).Data!.Items);
         Assert.False((await rig.Service.GetAsync(id, null, rig.Kofi)).Succeeded());
         Assert.False((await rig.Service.GetAsync(id, null, rig.Ama)).Succeeded());
     }
@@ -294,9 +297,9 @@ public class IntroductionServiceTests
         await rig.Service.EndAsync(id, rig.Kofi);
 
         // Both still see it in their list, marked ended, and can read it.
-        var asEnder = Assert.Single((await rig.Service.ListAsync("chats", rig.Kofi)).Data!);
+        var asEnder = Assert.Single((await rig.Service.ListAsync("archived", null, 25, null, rig.Kofi)).Data!.Items);
         Assert.Equal(("ended", true), (asEnder.Condition, asEnder.EndedByMe));
-        var asOther = Assert.Single((await rig.Service.ListAsync("chats", rig.Ama)).Data!);
+        var asOther = Assert.Single((await rig.Service.ListAsync("archived", null, 25, null, rig.Ama)).Data!.Items);
         Assert.Equal(("ended", false), (asOther.Condition, asOther.EndedByMe));
         Assert.Equal("resumable", (await rig.Service.GetStateAsync("ama", rig.Kofi)).Data!.State);
         Assert.Equal("reconnectable", (await rig.Service.GetStateAsync("kofi", rig.Ama)).Data!.State);   // the other person can ask, and the same chat comes back
@@ -383,7 +386,7 @@ public class IntroductionServiceTests
         var rig = new Rig();
         await rig.Connected();
         await rig.Edit(m => m.LastName = "Mensah-Quaye", "ama");
-        var other = Assert.Single((await rig.Service.ListAsync("chats", rig.Kofi)).Data!).Other;
+        var other = Assert.Single((await rig.Service.ListAsync("chats", null, 25, null, rig.Kofi)).Data!.Items).Other;
         Assert.Equal("Ama Mensah-Quaye", other.Name);
         Assert.DoesNotContain("@", System.Text.Json.JsonSerializer.Serialize(other));
     }
@@ -394,10 +397,10 @@ public class IntroductionServiceTests
         var rig = new Rig();
         await rig.Edit(m => { m.JobTitle = "Data Engineer"; m.Company = "MTN Ghana"; m.ShowCompanyOnDirectory = true; }, "kofi");
         await rig.Connected();
-        Assert.Equal("Data Engineer at MTN Ghana", Assert.Single((await rig.Service.ListAsync("chats", rig.Ama)).Data!).Other.Headline);
+        Assert.Equal("Data Engineer at MTN Ghana", Assert.Single((await rig.Service.ListAsync("chats", null, 25, null, rig.Ama)).Data!.Items).Other.Headline);
 
         await rig.Edit(m => m.ShowCompanyOnDirectory = false, "kofi");
-        Assert.Null(Assert.Single((await rig.Service.ListAsync("chats", rig.Ama)).Data!).Other.Headline);
+        Assert.Null(Assert.Single((await rig.Service.ListAsync("chats", null, 25, null, rig.Ama)).Data!.Items).Other.Headline);
     }
 
     [Fact]
@@ -444,20 +447,20 @@ public class IntroductionServiceTests
         var request = (await rig.Service.RequestAsync(new("kofi", "Hello again, I would like to reconnect."), rig.Ama)).Data!.IntroductionId!;
 
         // Kofi sees it as a request to pick the earlier conversation back up.
-        var waiting = Assert.Single((await rig.Service.ListAsync("incoming", rig.Kofi)).Data!);
+        var waiting = Assert.Single((await rig.Service.ListAsync("incoming", null, 25, null, rig.Kofi)).Data!.Items);
         Assert.Equal(chat, waiting.ReopensIntroductionId);
         Assert.Equal(chat, (await rig.Service.GetAsync(request, null, rig.Kofi)).Data!.Item.ReopensIntroductionId);
 
         var answer = await rig.Service.RespondAsync(request, true, rig.Kofi);
         Assert.Equal(chat, ((IntroductionTargetDto)answer.Data!).IntroductionId);                           // the same conversation, not a new one
 
-        var chats = (await rig.Service.ListAsync("chats", rig.Ama)).Data!;
+        var chats = (await rig.Service.ListAsync("chats", null, 25, null, rig.Ama)).Data!.Items;
         var only = Assert.Single(chats);                                                                    // one entry in the list, not two
         Assert.Equal((chat, "open"), (only.Id, only.Condition));
         Assert.Equal("our first chat", (await rig.Service.GetAsync(chat, null, rig.Ama)).Data!.Messages[0].Body);   // history intact
         Assert.True((await rig.Service.SendMessageAsync(chat, "good to be back", rig.Ama)).Succeeded());
-        Assert.Empty((await rig.Service.ListAsync("incoming", rig.Kofi)).Data!);
-        Assert.Empty((await rig.Service.ListAsync("sent", rig.Ama)).Data!);                                // the request itself is retired
+        Assert.Empty((await rig.Service.ListAsync("incoming", null, 25, null, rig.Kofi)).Data!.Items);
+        Assert.Empty((await rig.Service.ListAsync("sent", null, 25, null, rig.Ama)).Data!.Items);                                // the request itself is retired
         Assert.False((await rig.Service.RespondAsync(request, true, rig.Kofi)).Succeeded());              // and cannot be answered twice
     }
 
