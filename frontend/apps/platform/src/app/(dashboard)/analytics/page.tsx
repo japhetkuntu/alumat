@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Figure, InsightSection, LoadError, RankingBarChart, ShareBars, TrendChart,
-  formatCurrency, formatDate, monthLabel, percent,
-} from "@alumni/ui";
+import { Figure, InsightSection, LoadError, RankingBarChart, ShareBars, TrendChart, formatCurrencyFit, formatDate, monthLabel, percent,  } from "@alumni/ui";
 import { getPlatformAnalytics } from "@/lib/platform-api";
 import { PageHeading } from "@/components/platform/page-heading";
 
@@ -129,11 +126,11 @@ export default function PlatformAnalyticsPage() {
             action={<Link href="/reports" className="font-semibold text-primary underline underline-offset-4">Revenue by institution</Link>}
             answer={money && (
               <>
-                Institutions have collected <Figure>{formatCurrency(money.thisYearCollected)}</Figure> so far this year and we earned{" "}
-                <Figure>{formatCurrency(money.thisYearEarned)}</Figure> on it
+                Institutions have collected <Figure>{formatCurrencyFit(money.thisYearCollected)}</Figure> so far this year and we earned{" "}
+                <Figure>{formatCurrencyFit(money.thisYearEarned)}</Figure> on it
                 {money.thisYearCollected > 0 && <> ({((money.thisYearEarned / money.thisYearCollected) * 100).toFixed(1)}%)</>}
                 {money.lastYearToDateCollected > 0
-                  ? <>. That is {formatCurrency(Math.abs(collectedDifference))} {collectedDifference >= 0 ? "more" : "less"} collected than by this date last year.</>
+                  ? <>. That is {formatCurrencyFit(Math.abs(collectedDifference))} {collectedDifference >= 0 ? "more" : "less"} collected than by this date last year.</>
                   : <>. Nothing had been collected by this date last year to compare it with.</>}
               </>
             )}
@@ -161,7 +158,7 @@ export default function PlatformAnalyticsPage() {
               answer={leaders.length === 0
                 ? <>No institution has taken a payment in the last 90 days.</>
                 : <>
-                    <Figure>{leaders[0].name}</Figure> collected the most in the last 90 days: <Figure>{formatCurrency(leaders[0].collected)}</Figure>
+                    <Figure>{leaders[0].name}</Figure> collected the most in the last 90 days: <Figure>{formatCurrencyFit(leaders[0].collected)}</Figure>
                     {leaders.length > 1 && <>, {percent(leaders[0].collected, leadersTotal)} of what the top {leaders.length} took together</>}.
                   </>}
             >

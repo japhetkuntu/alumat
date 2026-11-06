@@ -13,7 +13,7 @@ import { Skeleton } from "@alumni/ui";
 
 // The charts library is large and the chart sits below the first screen: load it after the page is up rather than before it can show.
 const TrendChart = dynamic(() => import("@alumni/ui").then((m) => m.TrendChart), { ssr: false, loading: () => <Skeleton className="h-56 w-full" /> });
-import { formatCurrency } from "@alumni/ui";
+import { formatCurrencyFit } from "@alumni/ui";
 import { getActivationScorecard, getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
 import { MyTasksCard } from "@/components/platform/work/my-tasks-card";
@@ -81,7 +81,7 @@ export default function PlatformDashboardPage() {
           <StatCard
             variant="hero"
             label="Platform revenue"
-            value={formatCurrency(summary?.revenue ?? 0, "GHS")}
+            value={formatCurrencyFit(summary?.revenue ?? 0, "GHS")}
             sub="Platform fee collected across all institutions"
           />
         )}

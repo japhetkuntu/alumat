@@ -18,7 +18,7 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { formatCurrency, formatDate, cn } from "@alumni/ui";
+import { formatCurrencyFit, formatDate, cn } from "@alumni/ui";
 import { getCampaigns, createCampaign, updateCampaign, archiveCampaign, unarchiveCampaign, activateCampaign, getCommunities } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatureEnabled } from "@/hooks/use-institution-features";
@@ -391,8 +391,8 @@ export default function AdminCampaignsPage() {
 
                   <Progress value={Math.min(pct, 100)} className="h-2" />
                   <div className="flex items-center justify-between text-[13px] tabular-nums">
-                    <b>{c.isMembershipCampaign ? `${c.paidCount} paid` : `${formatCurrency(c.collectedAmount)} collected`}</b>
-                    <span className="text-muted-foreground">{c.isMembershipCampaign ? `${targetMembers} target` : `${formatCurrency(c.targetAmount)} target`}</span>
+                    <b>{c.isMembershipCampaign ? `${c.paidCount} paid` : `${formatCurrencyFit(c.collectedAmount)} collected`}</b>
+                    <span className="text-muted-foreground">{c.isMembershipCampaign ? `${targetMembers} target` : `${formatCurrencyFit(c.targetAmount)} target`}</span>
                   </div>
 
                   <p className="text-[12px] text-muted-foreground border-t border-border pt-3 mt-1">

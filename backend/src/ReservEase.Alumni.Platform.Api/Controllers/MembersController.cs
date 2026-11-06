@@ -29,4 +29,13 @@ public class MembersController(IPlatformMemberService memberService) : DefaultCo
         var result = await memberService.GetMembersAsync(filter);
         return result.ToActionResult();
     }
+
+    [HttpGet("{id}")]
+    [SwaggerOperation(Summary = "Full details of one member")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformMemberDetail>))]
+    public async Task<IActionResult> GetMember(string id)
+    {
+        var result = await memberService.GetMemberAsync(id);
+        return result.ToActionResult();
+    }
 }

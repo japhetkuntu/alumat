@@ -22,7 +22,7 @@ import { Badge } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@alumni/ui";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrency, formatCurrencyFit, formatDate } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
   getStoreProducts, createStoreProduct, updateStoreProduct, deleteStoreProduct, getStoreOrders,
@@ -817,7 +817,7 @@ export default function AdminStorePage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={orderStatusVariant[o.status] ?? "secondary"} size="sm">{o.status}</Badge>
-                        <span className="text-[14px] font-bold">{formatCurrency(o.totalAmount)}</span>
+                        <span className="text-[14px] font-bold">{formatCurrencyFit(o.totalAmount)}</span>
                       </div>
                     </div>
 

@@ -174,9 +174,10 @@ export default function ServiceDetailPage() {
         {/* ── Request form ── */}
         <Card className="lg:sticky lg:top-6 border-border/60">
           <CardContent className="p-6 space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-border/60">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 pb-4 border-b border-border/60">
               <span className="text-[13px] font-medium text-muted-foreground">Total due</span>
-              <span className="text-[22px] font-bold">{formatCurrency(service.price)}</span>
+              {/* The exact amount, since it is what they pay: it shrinks to fit, and drops to its own line, rather than being cut off. */}
+              <span className="min-w-0 max-w-full whitespace-nowrap font-bold" style={{ fontSize: "clamp(1.0625rem, 6.2vw, 1.375rem)" }}>{formatCurrency(service.price)}</span>
             </div>
 
             {service.fields.length === 0 ? (
@@ -219,7 +220,7 @@ export default function ServiceDetailPage() {
               </div>
             )}
 
-            <Button className="w-full font-semibold" size="lg" isLoading={submitMutation.isPending} onClick={submit}>
+            <Button className="h-auto min-h-11 w-full whitespace-normal py-2.5 text-center font-semibold leading-snug" size="lg" isLoading={submitMutation.isPending} onClick={submit}>
               Pay {formatCurrency(service.price)} & submit
             </Button>
           </CardContent>

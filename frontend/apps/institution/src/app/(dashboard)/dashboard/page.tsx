@@ -15,7 +15,7 @@ import dynamic from "next/dynamic";
 const chartFallback = () => <Skeleton className="h-56 w-full" />;
 const TrendChart = dynamic(() => import("@alumni/ui").then((m) => m.TrendChart), { ssr: false, loading: chartFallback });
 const DonutChart = dynamic(() => import("@alumni/ui").then((m) => m.DonutChart), { ssr: false, loading: chartFallback });
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrency, formatCurrencyFit, formatDate } from "@alumni/ui";
 import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast, getRevenueTrend } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
 import { CommunityHealthCard } from "@/components/institution/community-health-card";
@@ -65,7 +65,7 @@ function PayoutPanel() {
           className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground"
           style={{ fontSize: "clamp(1.1rem, 3vw, 1.6rem)", letterSpacing: "-0.02em", wordBreak: "break-word", overflowWrap: "anywhere" }}
         >
-          {formatCurrency(data.lastPayout.amount)}
+          {formatCurrencyFit(data.lastPayout.amount)}
         </p>
         <p className="text-[12px] text-muted-foreground mt-1.5">
           Settled {formatDate(data.lastPayout.date)} &middot; should already be in your account &middot; {data.lastPayout.transactionCount} transaction{data.lastPayout.transactionCount === 1 ? "" : "s"}
@@ -77,7 +77,7 @@ function PayoutPanel() {
           className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground"
           style={{ fontSize: "clamp(1.1rem, 3vw, 1.6rem)", letterSpacing: "-0.02em", wordBreak: "break-word", overflowWrap: "anywhere" }}
         >
-          {formatCurrency(data.nextPayout.amount)}
+          {formatCurrencyFit(data.nextPayout.amount)}
         </p>
         <p className="text-[12px] text-muted-foreground mt-1.5">
           Expected {formatDate(data.nextPayout.date)} morning &middot; still accumulating &middot; {data.nextPayout.transactionCount} transaction{data.nextPayout.transactionCount === 1 ? "" : "s"}
@@ -256,7 +256,7 @@ export default function AdminDashboardPage() {
                   tone="primary"
                   variant="hero"
                   label="Total collected"
-                  value={formatCurrency(totalAmountCollected)}
+                  value={formatCurrencyFit(totalAmountCollected)}
                   sub={contributionsOn ? <span style={{ color: "var(--success)" }}>{totalContributions} contributions</span> : undefined}
                 />
               </Link>

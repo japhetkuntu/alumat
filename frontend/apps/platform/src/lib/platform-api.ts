@@ -949,6 +949,22 @@ export interface PlatformMemberItem {
   /** Logged in within the last 7 days. */
   isActive: boolean;
   createdAt: string;
+  profilePictureUrl?: string | null;
+}
+
+export interface PlatformMemberDetail {
+  id: string; firstName: string; lastName: string; email: string; phone?: string | null; isEmailVerified: boolean;
+  institutionId: string; institutionName: string; organizationType: "Alumni" | "Community";
+  graduationYear: number; yearOfEntry?: number | null; program?: string | null; studentId?: string | null; memberNumber?: string | null; house?: string | null;
+  status: string; banReason?: string | null; company?: string | null; jobTitle?: string | null; location?: string | null; employmentStatus: string;
+  linkedInUrl?: string | null; bio?: string | null; profilePictureUrl?: string | null; skills?: string[] | null; interests?: string[] | null;
+  isMembershipActive: boolean; membershipExpiry?: string | null; membershipYearsPaid: number; lastMembershipPaidAt?: string | null;
+  lastLoginAt?: string | null; isActive: boolean; createdAt: string; termsAcceptedAt?: string | null;
+}
+
+export async function getPlatformMember(id: string) {
+  const res = await platformClient.get<ApiResponse<PlatformMemberDetail>>(`/members/${id}`);
+  return res.data.data!;
 }
 
 export async function getPlatformMembers(params: {

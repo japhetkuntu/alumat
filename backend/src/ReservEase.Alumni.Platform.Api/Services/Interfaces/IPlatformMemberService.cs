@@ -7,4 +7,5 @@ namespace ReservEase.Alumni.Platform.Api.Services.Interfaces;
 public interface IPlatformMemberService
 {
     Task<IApiResponse<PgPagedResult<PlatformMemberListItem>>> GetMembersAsync(PlatformMemberFilter filter);
+    Task<IApiResponse<PlatformMemberDetail>> GetMemberAsync(string id);
 }

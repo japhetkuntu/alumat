@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Landmark } from "@alumni/ui";
 import { Badge, Card, CardContent, CardSkeleton, EmptyState, FormSelect, LoadError } from "@alumni/ui";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrencyFit, formatDate } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { getPayoutDay, getPayoutForecast, getPayoutHistory, type PayoutDay } from "@/lib/institution-api";
 
@@ -37,7 +37,7 @@ function DayDetail({ date, account, showAccount }: { date: string; account: stri
             <Badge variant="secondary" size="sm" className="mt-1.5 sm:hidden">{item.source}</Badge>
           </div>
           <Badge variant="secondary" size="sm" className="hidden shrink-0 sm:inline-flex">{item.source}</Badge>
-          <span className="shrink-0 font-semibold tabular-nums">{formatCurrency(item.amount)}</span>
+          <span className="shrink-0 font-semibold tabular-nums">{formatCurrencyFit(item.amount)}</span>
         </li>
       ))}
     </ul>
@@ -65,15 +65,15 @@ function DayRow({ day, account }: { day: PayoutDay; account: string }) {
           <p className="text-[14.5px] font-semibold">{weekday(day.date)}, {formatDate(day.date)}</p>
           <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12.5px] text-muted-foreground">
             <span>{plural(day.transactionCount, "payment")}</span>
-            {day.sources.map((s) => <span key={s.source}>{s.source} {formatCurrency(s.amount)}</span>)}
+            {day.sources.map((s) => <span key={s.source}>{s.source} {formatCurrencyFit(s.amount)}</span>)}
           </p>
           {day.accounts.length > 1 && (
             <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12.5px] font-medium">
-              {day.accounts.map((a) => <span key={a.key}>{a.name}: {formatCurrency(a.amount)}</span>)}
+              {day.accounts.map((a) => <span key={a.key}>{a.name}: {formatCurrencyFit(a.amount)}</span>)}
             </p>
           )}
         </div>
-        <span className="shrink-0 text-[16px] font-bold tabular-nums">{formatCurrency(day.amount)}</span>
+        <span className="shrink-0 text-[16px] font-bold tabular-nums">{formatCurrencyFit(day.amount)}</span>
       </button>
       {open && <div className="border-t border-border/60 bg-muted/20"><DayDetail date={day.date} account={account} showAccount={day.accounts.length > 1} /></div>}
     </div>
@@ -111,12 +111,12 @@ export default function PayoutsPage() {
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <Card className="border-border/60"><CardContent className="p-[18px]">
             <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Latest payout</p>
-            <p className="mt-1.5 text-[26px] font-bold tabular-nums">{formatCurrency(forecast.data.lastPayout.amount)}</p>
+            <p className="mt-1.5 text-[26px] font-bold tabular-nums">{formatCurrencyFit(forecast.data.lastPayout.amount)}</p>
             <p className="mt-1 text-[12.5px] text-muted-foreground">{formatDate(forecast.data.lastPayout.date)} · {plural(forecast.data.lastPayout.transactionCount, "payment")}</p>
           </CardContent></Card>
           <Card className="border-border/60"><CardContent className="p-[18px]">
             <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Next payout</p>
-            <p className="mt-1.5 text-[26px] font-bold tabular-nums">{formatCurrency(forecast.data.nextPayout.amount)}</p>
+            <p className="mt-1.5 text-[26px] font-bold tabular-nums">{formatCurrencyFit(forecast.data.nextPayout.amount)}</p>
             <p className="mt-1 text-[12.5px] text-muted-foreground">Expected {formatDate(forecast.data.nextPayout.date)} morning · {plural(forecast.data.nextPayout.transactionCount, "payment")} so far</p>
           </CardContent></Card>
         </div>
@@ -128,7 +128,7 @@ export default function PayoutsPage() {
             <h2 id="history-heading" className="m-0 text-[16px] font-bold">Payout history</h2>
             {data && (
               <p className="mt-0.5 text-[13px] text-muted-foreground">
-                {data.days.length === 0 ? "No payouts in this period." : <><span className="font-semibold text-foreground tabular-nums">{formatCurrency(data.totalAmount)}</span> paid out across {plural(data.days.length, "day")}</>}
+                {data.days.length === 0 ? "No payouts in this period." : <><span className="font-semibold text-foreground tabular-nums">{formatCurrencyFit(data.totalAmount)}</span> paid out across {plural(data.days.length, "day")}</>}
               </p>
             )}
           </div>

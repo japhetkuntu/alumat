@@ -25,7 +25,7 @@ import { StatCard, StatCardSkeleton } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import Link from "next/link";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrencyFit, formatDate } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
   getMyCampaigns,
@@ -155,7 +155,7 @@ function MembershipCard({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-white font-bold text-[16px] sm:text-[18px]">
-                {formatCurrency(getMemberAmount(membershipCampaign))}
+                {formatCurrencyFit(getMemberAmount(membershipCampaign))}
                 {isPensioner ? (
                   <span className="text-white/60 text-[12px] font-normal ml-1.5">pensioner rate</span>
                 ) : null}
@@ -332,7 +332,7 @@ function CampaignRow({
           {campaign.title}
         </p>
         <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-          {formatCurrency(amount)}
+          {formatCurrencyFit(amount)}
           {isPensioner ? " · pensioner rate" : ""} · Due {formatDate(campaign.deadline)}
         </p>
       </div>
@@ -598,8 +598,8 @@ function StoreCard() {
       <CardContent className="pt-4 space-y-1">
         {products.slice(0, 3).map((p) => {
           const price = p.variantOptionTypes.length > 0 && p.variants.length > 0
-            ? `From ${formatCurrency(Math.min(...p.variants.map((v) => v.price)))}`
-            : formatCurrency(p.price);
+            ? `From ${formatCurrencyFit(Math.min(...p.variants.map((v) => v.price)))}`
+            : formatCurrencyFit(p.price);
           return (
             <Link key={p.id} href={`/store/${p.id}`} className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-secondary group">
               <div className="w-10 h-10 shrink-0 overflow-hidden flex items-center justify-center rounded-xl" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
@@ -641,7 +641,7 @@ function ServicesCard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold leading-snug truncate" style={{ color: "var(--foreground)" }}>{sv.name}</p>
-              <p className="text-[12.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{sv.price > 0 ? formatCurrency(sv.price) : "Free"}</p>
+              <p className="text-[12.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{sv.price > 0 ? formatCurrencyFit(sv.price) : "Free"}</p>
             </div>
           </Link>
         ))}
@@ -838,8 +838,8 @@ export default function MemberDashboardPage() {
       {(() => {
         const tiles = [
           contributionsEnabled && campaigns.data && <DashStat key="open" href="/contributions" label="Open fundraisers" value={activeCampaigns.length} sub="Including dues" tone="primary" />,
-          contributionsEnabled && contributionSummary.data && <DashStat key="total" href="/contributions" label="Total contributed" value={formatCurrency(totalPaid)} sub="All-time confirmed" tone="accent" />,
-          contributionsEnabled && contributionSummary.data && <DashStat key="year" href="/contributions" label="This year" value={formatCurrency(totalPaidThisYear)} sub={`Contributed in ${currentYear}`} tone="primary" />,
+          contributionsEnabled && contributionSummary.data && <DashStat key="total" href="/contributions" label="Total contributed" value={formatCurrencyFit(totalPaid, "GHS", 11)} sub="All-time confirmed" tone="accent" />,
+          contributionsEnabled && contributionSummary.data && <DashStat key="year" href="/contributions" label="This year" value={formatCurrencyFit(totalPaidThisYear, "GHS", 11)} sub={`Contributed in ${currentYear}`} tone="primary" />,
           eventsEnabled && events.data && <DashStat key="events" href="/events" label="Upcoming events" value={upcomingEventsCount} sub="Events you can join" tone="accent" />,
         ].filter(Boolean);
         const expected = (contributionsEnabled ? 3 : 0) + (eventsEnabled ? 1 : 0);
@@ -943,7 +943,7 @@ export default function MemberDashboardPage() {
                       </p>
                       <div className="text-right shrink-0">
                         <p className="text-[14px] font-bold" style={{ color: "var(--primary)" }}>
-                          {formatCurrency(c.amountPerMember)}
+                          {formatCurrencyFit(c.amountPerMember)}
                         </p>
                         <p className="text-[12px] font-normal" style={{ color: "var(--muted-foreground)" }}>
                           Per member
@@ -1004,7 +1004,7 @@ export default function MemberDashboardPage() {
                         </div>
                         <div className="text-right shrink-0">
                           <p className="text-[14px] font-bold" style={{ color: "var(--primary)" }}>
-                            {formatCurrency(c.amountPerMember)}
+                            {formatCurrencyFit(c.amountPerMember)}
                           </p>
                           <p className="text-[12px] font-normal" style={{ color: "var(--muted-foreground)" }}>
                             Per member
@@ -1118,7 +1118,7 @@ export default function MemberDashboardPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[14px] font-bold" style={{ color: "var(--foreground)" }}>
-                    {formatCurrency(c.amount)}
+                    {formatCurrencyFit(c.amount)}
                   </p>
                   <Badge
                     variant={c.status === "Successful" ? "success" : c.status === "Pending" ? "warning" : "destructive"}

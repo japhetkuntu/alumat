@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, Checkbox } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { formatCurrency, formatDate, cn } from "@alumni/ui";
+import { formatCurrency, formatCurrencyFit, formatDate, cn } from "@alumni/ui";
 import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { PledgesPanel } from "@/components/institution/pledges-panel";
 import { PublicPagePanel } from "@/components/institution/public-page-panel";
@@ -213,8 +213,8 @@ export default function CampaignDetailPage() {
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{campaign.isMembershipCampaign ? "Dues collected" : "Collected"}</p>
             <div className="mt-1 flex flex-wrap items-baseline gap-x-3">
-              <span className="text-4xl font-bold tabular-nums text-success">{formatCurrency(campaign.collectedAmount)}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">of {formatCurrency(campaign.targetAmount)} · {pct}%</span>
+              <span className="whitespace-nowrap font-bold tabular-nums text-success" style={{ fontSize: "clamp(1.625rem, 9vw, 2.25rem)" }} title={formatCurrency(campaign.collectedAmount)}>{formatCurrencyFit(campaign.collectedAmount, "GHS", 16)}</span>
+              <span className="text-sm text-muted-foreground tabular-nums">of {formatCurrencyFit(campaign.targetAmount, "GHS", 16)} · {pct}%</span>
             </div>
             <Progress value={pct} className="mt-4 h-1.5" />
             {campaign.description && <RichText className="mt-5 max-w-2xl text-[14px] text-muted-foreground" content={campaign.description} />}
@@ -224,7 +224,7 @@ export default function CampaignDetailPage() {
             <Stat label="Paid members" value={String(campaign.paidCount)} />
             <Stat label="Closes" value={formatDate(campaign.deadline)} hint={campaign.status === "Active" && daysUntilDeadline >= 0 ? (daysUntilDeadline === 0 ? "Today" : `${daysUntilDeadline} day${daysUntilDeadline === 1 ? "" : "s"} left`) : undefined} />
             <Stat label="Successful payments" value={paystackSummary ? String(paystackSummary.confirmedCount) : "–"} />
-            <Stat label="Online, collected" value={paystackSummary ? formatCurrency(paystackSummary.totalPaidToPaystack) : "–"} />
+            <Stat label="Online, collected" value={paystackSummary ? formatCurrencyFit(paystackSummary.totalPaidToPaystack, "GHS", 16) : "–"} />
           </dl>
           {isSuperAdmin && (
             <p className="text-[12.5px] text-muted-foreground">
@@ -622,7 +622,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   return (
     <div>
       <dt className="text-[12px] text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-lg font-semibold tabular-nums">{value}</dd>
+      <dd className="mt-0.5 break-words text-lg font-semibold tabular-nums">{value}</dd>
       {hint && <p className="text-[12px] text-muted-foreground">{hint}</p>}
     </div>
   );

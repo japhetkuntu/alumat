@@ -8,7 +8,7 @@ import { Button } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { TrendChart, DonutChart } from "@alumni/ui";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrency, formatCurrencyFit, formatDate } from "@alumni/ui";
 import { Landmark, Clock3 } from "@alumni/ui";
 import {
   getInstitutions, getRevenueTrend, getPayoutForecast,
@@ -128,7 +128,7 @@ export default function BillingPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5 max-sm:[&>*:nth-child(3)]:col-span-2">
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Active institutions</p><p className="text-[24px] font-bold mt-1">{activeInstitutions.length}</p></CardContent></Card>
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Suspended institutions</p><p className="text-[24px] font-bold mt-1">{suspendedCount}</p></CardContent></Card>
-        <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Total platform revenue</p><p className="text-[24px] font-bold mt-1">{formatCurrency(totalRevenue, "GHS")}</p></CardContent></Card>
+        <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Total platform revenue</p><p className="text-[24px] font-bold mt-1">{formatCurrencyFit(totalRevenue, "GHS")}</p></CardContent></Card>
       </div>
 
       {/* Estimated from confirmed transactions, same formula/windows every
@@ -147,14 +147,14 @@ export default function BillingPage() {
                 icon={Landmark}
                 variant="hero"
                 label="Last payout, all institutions"
-                value={formatCurrency(payoutForecast.totals.lastPayout.amount, "GHS")}
+                value={formatCurrencyFit(payoutForecast.totals.lastPayout.amount, "GHS")}
                 sub={`Settled ${formatDate(payoutForecast.totals.lastPayout.date)} · ${payoutForecast.totals.lastPayout.transactionCount} transactions`}
               />
               <StatCard
                 icon={Clock3}
                 tone="accent"
                 label="Next payout, all institutions"
-                value={formatCurrency(payoutForecast.totals.nextPayout.amount, "GHS")}
+                value={formatCurrencyFit(payoutForecast.totals.nextPayout.amount, "GHS")}
                 sub={`Expected ${formatDate(payoutForecast.totals.nextPayout.date)} morning · still accumulating`}
               />
             </div>

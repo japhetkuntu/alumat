@@ -20,7 +20,7 @@ import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { formatDate, formatCurrency, cn } from "@alumni/ui";
+import { formatDate, formatCurrency, formatCurrencyFit, cn } from "@alumni/ui";
 import { getEvents, createEvent, updateEvent, cancelEvent, deleteEvent, getCommunities, getEventTicketing, setEventRegistrationClosed } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
@@ -587,7 +587,7 @@ export default function AdminEventsPage() {
                   </div>
                   {e.isTicketed && (
                     <div className="flex items-center gap-1.5">
-                      <Ticket size={11} />{formatCurrency(e.ticketAmountCollected ?? 0)} collected
+                      <Ticket size={11} />{formatCurrencyFit(e.ticketAmountCollected ?? 0)} collected
                     </div>
                   )}
                 </div>

@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { InfoTip } from "@alumni/ui";
-import { UserAvatar, formatDate, formatDateTime } from "@alumni/ui";
+import { formatDate, formatDateTime } from "@alumni/ui";
+import Link from "next/link";
+import { ViewableAvatar } from "@/components/platform/viewable-avatar";
 import { getPlatformMembers } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeading } from "@/components/platform/page-heading";
@@ -115,9 +117,9 @@ export default function PlatformMembersPage() {
               <TableRow key={m.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <UserAvatar name={`${m.firstName} ${m.lastName}`} size="sm" />
+                    <ViewableAvatar src={m.profilePictureUrl} name={`${m.firstName} ${m.lastName}`} caption={m.email} size="sm" />
                     <div className="min-w-0">
-                      <p className="font-semibold truncate">{m.firstName} {m.lastName}</p>
+                      <Link href={`/members/${m.id}`} className="font-semibold truncate block hover:underline">{m.firstName} {m.lastName}</Link>
                       <p className="text-[12px] text-muted-foreground truncate">{m.email}</p>
                     </div>
                   </div>

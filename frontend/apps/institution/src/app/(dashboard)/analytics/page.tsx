@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ChangeStat, Figure, InsightSection, LoadError, RankingBarChart, ShareBars, TrendChart,
-  formatCurrency, monthLabel, percent,
-} from "@alumni/ui";
+import { ChangeStat, Figure, InsightSection, LoadError, RankingBarChart, ShareBars, TrendChart, formatCurrencyFit, monthLabel, percent,  } from "@alumni/ui";
 import { getAnalytics } from "@/lib/institution-api";
 import { useFeatures } from "@/hooks/use-institution-features";
 import { useInstitutionNavTheme, useCohortPhrase } from "@/components/institution/institution-layout";
@@ -165,7 +162,7 @@ export default function AnalyticsPage() {
               ? <>Dues are set for {dues.year}, but no approved member is due to pay them yet.</>
               : <>
                   <Figure>{dues.paid.toLocaleString()}</Figure> of <Figure>{dues.eligible.toLocaleString()}</Figure> members have paid
-                  (<Figure>{percent(dues.paid, dues.eligible)}</Figure>), bringing in <Figure>{formatCurrency(dues.collected)}</Figure>.{" "}
+                  (<Figure>{percent(dues.paid, dues.eligible)}</Figure>), bringing in <Figure>{formatCurrencyFit(dues.collected)}</Figure>.{" "}
                   {dues.eligible - dues.paid > 0
                     ? <>{(dues.eligible - dues.paid).toLocaleString()} still owe.</>
                     : <>Everyone has paid.</>}
@@ -201,10 +198,10 @@ export default function AnalyticsPage() {
           loading={loading}
           answer={money && (
             <>
-              <Figure>{formatCurrency(money.thisYear)}</Figure> received so far this year
+              <Figure>{formatCurrencyFit(money.thisYear)}</Figure> received so far this year
               {contributionsOn && money.payersThisYear > 0 && <> from <Figure>{money.payersThisYear.toLocaleString()}</Figure> {money.payersThisYear === 1 ? "member" : "members"}</>}
               {money.lastYearToDate > 0
-                ? <>: {formatCurrency(Math.abs(moneyDifference))} {moneyDifference >= 0 ? "more" : "less"} than by this date last year ({formatCurrency(money.lastYearToDate)}).</>
+                ? <>: {formatCurrencyFit(Math.abs(moneyDifference))} {moneyDifference >= 0 ? "more" : "less"} than by this date last year ({formatCurrencyFit(money.lastYearToDate)}).</>
                 : <>. Nothing had come in by this date last year to compare it with.</>}
             </>
           )}

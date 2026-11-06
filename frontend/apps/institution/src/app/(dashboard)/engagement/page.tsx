@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChangeStat, EmptyState, Figure, InsightSection, LoadError, TrendChart, cn, formatCurrency } from "@alumni/ui";
+import { ChangeStat, EmptyState, Figure, InsightSection, LoadError, TrendChart, cn, formatCurrencyFit } from "@alumni/ui";
 import {
   assignRecommendation, getCohorts, getEngagementDashboard, getHealthHistory, getInstitutionStaff, resolveRecommendation, setChecklistItem,
   type CohortsData, type EngagementDashboard, type EngagementRecommendation, type HealthFactor,
@@ -108,7 +108,7 @@ export default function EngagementPage() {
             <Stat label="Activated members" value={d.activated} note="Signed in and filled in part of their profile" />
             <Stat label="Came back to take part" value={d.retentionPercent === undefined ? "n/a" : `${d.retentionPercent}%`} note={d.retentionPercent === undefined ? "Too few members in the previous period to compare" : "Of those who took part before, took part again"} />
             <Stat label="Upcoming events" value={d.upcomingEvents} note="In the next 30 days" />
-            <Stat label="Contributions" value={formatCurrency(d.contributionVolume)} note={`From ${d.contributors.toLocaleString()} ${d.contributors === 1 ? "member" : "members"}`} />
+            <Stat label="Contributions" value={formatCurrencyFit(d.contributionVolume, "GHS", 11)} note={`From ${d.contributors.toLocaleString()} ${d.contributors === 1 ? "member" : "members"}`} />
           </div>
         )}
       </InsightSection>
@@ -144,7 +144,7 @@ export default function EngagementPage() {
 function Stat({ label, value, note }: { label: string; value: number | string; note: string }) {
   return (
     <div className="border-l-2 border-border pl-4">
-      <p className="text-[26px] font-bold leading-none tabular-nums text-foreground">{typeof value === "number" ? value.toLocaleString() : value}</p>
+      <p className="whitespace-nowrap font-bold leading-none tabular-nums text-foreground" style={{ fontSize: "clamp(1rem, 5.4vw, 1.625rem)" }}>{typeof value === "number" ? value.toLocaleString() : value}</p>
       <p className="mt-1.5 text-[14px] text-foreground">{label}</p>
       <p className="mt-0.5 text-[12.5px] text-muted-foreground">{note}</p>
     </div>

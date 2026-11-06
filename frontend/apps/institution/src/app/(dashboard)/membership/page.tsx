@@ -19,7 +19,7 @@ import { FormSheet, FormSection, CheckOption } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
-import { formatCurrency, formatDate, cn } from "@alumni/ui";
+import { formatCurrencyFit, formatDate, cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { CardSkeleton } from "@alumni/ui";
@@ -399,9 +399,9 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5 tabular-nums">
             <CreditCard size={14} />
-            <span className="font-bold">{formatCurrency(c.amountPerMember)}</span> employed
+            <span className="font-bold">{formatCurrencyFit(c.amountPerMember)}</span> employed
             {c.pensionerAmountPerMember != null && (
-              <> · <span className="font-bold">{formatCurrency(c.pensionerAmountPerMember)}</span> pensioner</>
+              <> · <span className="font-bold">{formatCurrencyFit(c.pensionerAmountPerMember)}</span> pensioner</>
             )}
           </div>
           <div className="flex items-center gap-1.5">

@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadError } from "@alumni/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, XCircle, Download, ShieldBan, ShieldCheck, MailCheck, MailX, Eye, Upload, Loader2 } from "@alumni/ui";
@@ -188,6 +188,12 @@ export default function AdminMembersPage() {
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<MemberStatus | "">(() => (searchParams.get("status") as MemberStatus | null) ?? "");
   const [page, setPage] = useState(1);
+  // The dashboard scrolls inside <main>, so a new page has to take the reader back to the top of the list itself.
+  const firstPage = useRef(true);
+  useEffect(() => {
+    if (firstPage.current) { firstPage.current = false; return; }
+    document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page]);
   const [modal, setModal] = useState<ModalState>(null);
   const [reasonText, setReasonText] = useState("");
   const [showImport, setShowImport] = useState(false);

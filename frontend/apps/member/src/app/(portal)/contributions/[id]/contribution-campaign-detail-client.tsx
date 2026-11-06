@@ -20,7 +20,7 @@ import { Input } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
-import { formatCurrency, formatDate, cn } from "@alumni/ui";
+import { formatCurrency, formatCurrencyFit, formatDate, cn } from "@alumni/ui";
 import {
   getCampaignById, getMyProfile,
   initiatePaystackPayment, renewMembership, getMyContributions,
@@ -203,7 +203,7 @@ export default function CampaignDetailPage() {
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {[
                 { icon: Calendar, text: `Closes ${formatDate(campaign.deadline)}` },
-                { icon: Target,   text: `Goal: ${formatCurrency(campaign.targetAmount)}` },
+                { icon: Target,   text: `Goal: ${formatCurrencyFit(campaign.targetAmount)}` },
                 { icon: Users,    text: `${campaign.paidCount} contributor${campaign.paidCount !== 1 ? "s" : ""}` },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-1.5 text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
@@ -383,7 +383,7 @@ export default function CampaignDetailPage() {
 
               {/* Amount + deadline info row */}
               <div
-                className="grid grid-cols-2 divide-x rounded-xl overflow-hidden"
+                className="grid grid-cols-1 divide-y min-[400px]:grid-cols-2 min-[400px]:divide-x min-[400px]:divide-y-0 rounded-xl overflow-hidden"
                 style={{ background: "var(--secondary)", borderColor: "var(--border)", border: "1px solid var(--border)" }}
               >
                 <div className="p-4">
@@ -392,9 +392,10 @@ export default function CampaignDetailPage() {
                   </p>
                   <p
                     className="font-[family-name:var(--font-display)] font-bold tabular-nums"
-                    style={{ fontSize: "1.25rem", color: "var(--foreground)", letterSpacing: "-0.02em" }}
+                    title={formatCurrency(memberAmount)}
+                    style={{ fontSize: "clamp(1rem, 5.4vw, 1.25rem)", color: "var(--foreground)", letterSpacing: "-0.02em", whiteSpace: "nowrap" }}
                   >
-                    {formatCurrency(memberAmount)}
+                    {formatCurrencyFit(memberAmount)}
                   </p>
                   {isPensioner && isMembership && (
                     <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Pensioner rate</p>
@@ -463,7 +464,7 @@ export default function CampaignDetailPage() {
                           key={multiplier}
                           onClick={() => { setPreset(multiplier); setAmount(String(val)); }}
                           className={cn(
-                            "rounded-xl py-2.5 text-[13px] font-semibold border transition-colors",
+                            "min-w-0 whitespace-nowrap rounded-xl px-1 py-2.5 text-[13px] font-semibold border transition-colors",
                             active
                               ? "text-white border-transparent"
                               : "border-border hover:border-primary/40",
@@ -476,7 +477,7 @@ export default function CampaignDetailPage() {
                           <span className="block text-[12px] mb-0.5 font-bold opacity-60">
                             {multiplier}×
                           </span>
-                          {formatCurrency(val)}
+                          {formatCurrencyFit(val, "GHS", 12)}
                         </button>
                       );
                     })}
@@ -668,15 +669,15 @@ function ProgressBlock({ campaign, isMembership, pct }: {
       </div>
       <Progress value={pct} className="h-2.5" />
       <div className="flex items-center justify-between text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
-        <span className="font-semibold" style={{ color: "var(--primary)" }}>
+        <span className="font-semibold" style={{ color: "var(--primary)" }} title={isMembership ? undefined : formatCurrency(campaign.collectedAmount)}>
           {isMembership
             ? `${campaign.paidCount} paid`
-            : formatCurrency(campaign.collectedAmount)}
+            : formatCurrencyFit(campaign.collectedAmount)}
         </span>
         <span>
           {isMembership
             ? `${campaign.totalEligibleMembers ?? "?"} eligible`
-            : `Goal: ${formatCurrency(campaign.targetAmount)}`}
+            : `Goal: ${formatCurrencyFit(campaign.targetAmount)}`}
         </span>
       </div>
     </div>

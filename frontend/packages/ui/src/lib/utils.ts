@@ -13,6 +13,17 @@ export function formatCurrency(amount: number, currency = "GHS"): string {
   }).format(amount);
 }
 
+/**
+ * For a figure shown in a small space (a stat, a chip, half a card): the full amount when it fits in `maxChars`, otherwise a compact form
+ * ("GH₵150B") so it never overflows or breaks across lines. Pair it with the exact amount in a title. Do not use it where the exact amount
+ * matters to the person (a payment button, a receipt): those show formatCurrency.
+ */
+export function formatCurrencyFit(amount: number, currency = "GHS", maxChars = 16): string {
+  const full = formatCurrency(amount, currency);
+  if (full.length <= maxChars) return full;
+  return new Intl.NumberFormat("en-GH", { style: "currency", currency, notation: "compact", maximumFractionDigits: 2 }).format(amount);
+}
+
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat("en-GH", {
     year: "numeric",

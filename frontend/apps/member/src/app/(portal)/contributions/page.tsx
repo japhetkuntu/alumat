@@ -20,7 +20,7 @@ import {
   Dialog, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@alumni/ui";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrency, formatCurrencyFit, formatDate } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
   getMyCampaigns,
@@ -165,7 +165,7 @@ function PaymentStatusModal({
             </span>
             {amount != null && (
               <span className="text-[13px] font-bold tabular-nums shrink-0" style={{ color: "var(--foreground)" }}>
-                {formatCurrency(amount)}
+                {formatCurrencyFit(amount)}
               </span>
             )}
           </div>
@@ -339,8 +339,8 @@ function CampaignCard({
               <p className="text-[12px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
                 {isMembership ? "Your amount" : "Suggested"}
               </p>
-              <p className="text-[17px] font-bold tabular-nums" style={{ color: isBumped ? "var(--primary)" : "var(--foreground)" }}>
-                {formatCurrency(payAmount)}
+              <p className="text-[17px] font-bold tabular-nums" title={formatCurrency(payAmount)} style={{ color: isBumped ? "var(--primary)" : "var(--foreground)" }}>
+                {formatCurrencyFit(payAmount)}
                 {isPensioner && isMembership && (
                   <span className="text-[12px] font-normal ml-1.5" style={{ color: "var(--muted-foreground)" }}>
                     pensioner rate
@@ -380,12 +380,12 @@ function CampaignCard({
                     key={mult}
                     type="button"
                     onClick={() => setCustomAmount(String(value))}
-                    className="px-2.5 py-1 text-[12px] font-bold rounded-lg border transition-colors tabular-nums"
+                    title={formatCurrency(value)} className="whitespace-nowrap px-2.5 py-1 text-[12px] font-bold rounded-lg border transition-colors tabular-nums"
                     style={active
                       ? { background: "var(--primary)", color: "var(--primary-foreground)", borderColor: "var(--primary)" }
                       : { background: "var(--background)", color: "var(--foreground)", borderColor: "var(--border)" }}
                   >
-                    {formatCurrency(value)}
+                    {formatCurrencyFit(value)}
                   </button>
                 );
               })}
@@ -488,8 +488,9 @@ function CampaignCard({
 
           {!membershipPaid && (
             <Button
-              className={`min-w-[8rem] whitespace-nowrap px-3 font-bold text-[13.5px] gap-2 ${makeMonthly ? "basis-full sm:basis-0 sm:flex-1" : "flex-1"}`}
-              style={{ height: 42 }}
+              className={`whitespace-nowrap px-3 font-bold text-[13.5px] gap-2 ${makeMonthly ? "basis-full sm:basis-0 sm:flex-1" : "flex-1"}`}
+              // Inline, because the page's touch-target rule (min-width: 44px on every button) outranks a class: the button must never be narrower than its text.
+              style={{ height: 42, minWidth: "max-content" }}
               onClick={() => onPay(payAmount, makeMonthly)}
               disabled={isPaying}
             >
@@ -780,7 +781,7 @@ export default function MemberContributionsPage() {
                 className="font-[family-name:var(--font-display)] font-bold tabular-nums"
                 style={{ fontSize: "1.25rem", color: "var(--primary)", letterSpacing: "-0.02em" }}
               >
-                {formatCurrency(totalPaid)}
+                {formatCurrencyFit(totalPaid)}
               </p>
             </div>
           )}
@@ -849,7 +850,7 @@ export default function MemberContributionsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <span className="text-[14px] font-bold tabular-nums" style={{ color: "var(--foreground)" }}>
-                        {formatCurrency(c.amount)}
+                        {formatCurrencyFit(c.amount)}
                       </span>
                     </td>
                     <td className="px-5 py-4">
@@ -933,7 +934,7 @@ export default function MemberContributionsPage() {
                     {c.campaignTitle ?? "Contribution"}
                   </p>
                   <p className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: "var(--foreground)" }}>
-                    {formatCurrency(c.amount)}
+                    {formatCurrencyFit(c.amount)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">

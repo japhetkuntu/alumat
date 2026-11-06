@@ -23,7 +23,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
 import { ColorPicker } from "@alumni/ui";
-import { formatCurrency } from "@alumni/ui";
+import { formatCurrency, formatCurrencyFit } from "@alumni/ui";
 import {
   getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionName, updateInstitutionSlug, deleteInstitution, updateInstitutionMemberPolicy,
   updateInstitutionAutoApproveMembers,
@@ -1234,15 +1234,15 @@ export default function InstitutionDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <p className="text-[12px] text-muted-foreground">Gross collected</p>
-                    <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.grossCollected ?? 0, "GHS")}</p>
+                    <p className="text-[20px] font-bold mt-1">{formatCurrencyFit(revenue?.grossCollected ?? 0, "GHS")}</p>
                   </div>
                   <div>
                     <p className="text-[12px] text-muted-foreground">Platform fee</p>
-                    <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.platformFeeTotal ?? 0, "GHS")}</p>
+                    <p className="text-[20px] font-bold mt-1">{formatCurrencyFit(revenue?.platformFeeTotal ?? 0, "GHS")}</p>
                   </div>
                   <div>
                     <p className="text-[12px] text-muted-foreground">Net to institution</p>
-                    <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.netToInstitution ?? 0, "GHS")}</p>
+                    <p className="text-[20px] font-bold mt-1">{formatCurrencyFit(revenue?.netToInstitution ?? 0, "GHS")}</p>
                   </div>
                 </div>
                 <p className="text-[12px] text-muted-foreground mt-3">{(revenue?.confirmedPaymentCount ?? 0).toLocaleString()} successful payments</p>

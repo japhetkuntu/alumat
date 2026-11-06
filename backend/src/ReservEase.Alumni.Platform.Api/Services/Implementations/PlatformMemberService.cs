@@ -52,7 +52,7 @@ public class PlatformMemberService(
                 m.InstitutionId, institutionLookup.GetValueOrDefault(m.InstitutionId)?.Name ?? "Unknown institution",
                 institutionLookup.GetValueOrDefault(m.InstitutionId)?.OrganizationType ?? "Community",
                 m.GraduationYear, m.Status,
-                m.LastLoginAt, m.LastLoginAt != null && m.LastLoginAt >= activeCutoff, m.CreatedAt)).ToList();
+                m.LastLoginAt, m.LastLoginAt != null && m.LastLoginAt >= activeCutoff, m.CreatedAt, m.ProfilePictureUrl)).ToList();
 
             return new PgPagedResult<PlatformMemberListItem>
             {
@@ -72,5 +72,29 @@ public class PlatformMemberService(
             return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<PlatformMemberListItem>>("Failed to retrieve members");
         }
 
+    }
+
+    public async Task<IApiResponse<PlatformMemberDetail>> GetMemberAsync(string id)
+    {
+        try
+        {
+            var m = await memberRepo.GetByIdAsync(id, ignoreQueryFilters: true);
+            if (m is null) return ApiResponseExtensions.ToNotFoundApiResponse<PlatformMemberDetail>("Member not found");
+            var inst = await institutionRepo.GetByIdAsync(m.InstitutionId, ignoreQueryFilters: true);
+            var active = m.LastLoginAt != null && m.LastLoginAt >= DateTime.UtcNow.AddDays(-ActiveWindowDays);
+            return new PlatformMemberDetail(
+                m.Id, m.FirstName, m.LastName, m.Email, m.Phone, m.IsEmailVerified,
+                m.InstitutionId, inst?.Name ?? "Unknown institution", inst?.OrganizationType ?? "Community",
+                m.GraduationYear, m.YearOfEntry, m.Program, m.StudentId, m.MemberNumber, m.House,
+                m.Status, m.BanReason, m.Company, m.JobTitle, m.Location, m.EmploymentStatus,
+                m.LinkedInUrl, m.Bio, m.ProfilePictureUrl, m.Skills, m.Interests,
+                m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt,
+                m.LastLoginAt, active, m.CreatedAt, m.TermsAcceptedAt).ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving platform member {MemberId}", id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformMemberDetail>("Failed to retrieve member");
+        }
     }
 }
