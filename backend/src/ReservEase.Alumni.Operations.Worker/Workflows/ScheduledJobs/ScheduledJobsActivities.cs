@@ -63,7 +63,9 @@ public class ScheduledJobsActivities(
     IAlumniPgRepository<CommunityMembership>? membershipRepo = null,
     IAlumniPgRepository<Poll>? pollRepo = null,
     IAlumniPgRepository<PollParticipation>? pollParticipationRepo = null,
-    ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine? pollEngine = null)
+    ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine? pollEngine = null,
+    IAlumniPgRepository<Introduction>? introductionRepo = null,
+    IAlumniPgRepository<MemberBlock>? blockRepo = null)
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
     private const int MaxFailedRecurringAttempts = 3;
@@ -788,6 +790,51 @@ public class ScheduledJobsActivities(
         }, "load today's celebrants", institutionId);
 
     /// <summary>A birthday is over after 72 hours: the system unpins its spotlight and closes the shoutout threads, so nothing about it lingers on the website, the forum list or the dashboard. Only recent ones are looked at, so this stays cheap.</summary>
+    /// <summary>
+    /// A request to connect that has waited three days with no answer gets one reminder (email, and a text if the member opted in), because
+    /// the person it is for may simply not have opened the app. Never more than one per request, never for one older than two weeks, and
+    /// never when the member no longer takes introductions, the community has switched the feature off, or either side has blocked the other.
+    /// The reminder names who asked and never carries their note.
+    /// </summary>
+    [Activity("ScheduledJobs.SendIntroductionReminders")]
+    public virtual Task<int> SendIntroductionRemindersAsync(DateTime now) =>
+        Wrap(async () =>
+        {
+            if (introductionRepo is null || blockRepo is null) return 0;
+            var due = await introductionRepo.GetQueryable(
+                    i => i.Status == IntroductionStatuses.Pending && i.ReminderSentAt == null && i.CreatedAt <= now.AddDays(-3) && i.CreatedAt >= now.AddDays(-14), ignoreQueryFilters: true)
+                .OrderBy(i => i.CreatedAt).Take(200).ToListAsync();
+            if (due.Count == 0) return 0;
+
+            var memberIds = due.SelectMany(i => new[] { i.RequesterId, i.RecipientId }).Distinct().ToList();
+            var people = (await memberRepo.GetAllAsync(m => memberIds.Contains(m.Id), ignoreQueryFilters: true)).ToDictionary(m => m.Id);
+            var institutionIds = due.Select(i => i.InstitutionId).Distinct().ToList();
+            var institutions = (await institutionRepo.GetAllAsync(i => institutionIds.Contains(i.Id), ignoreQueryFilters: true)).ToDictionary(i => i.Id);
+            var blocks = await blockRepo.GetAllAsync(b => memberIds.Contains(b.BlockerId) && memberIds.Contains(b.BlockedId), ignoreQueryFilters: true);
+            var blocked = blocks.Select(b => (b.BlockerId, b.BlockedId)).ToHashSet();
+
+            var reminded = 0;
+            foreach (var intro in due)
+            {
+                intro.ReminderSentAt = now;   // set for every one looked at, so a request that is not eligible is not looked at again each run
+                intro.UpdatedBy = "system";
+
+                if (!people.TryGetValue(intro.RecipientId, out var to) || !people.TryGetValue(intro.RequesterId, out var from)) continue;
+                if (to.Status != "Active" || !to.AllowIntroductions || from.Status != "Active") continue;
+                if (blocked.Contains((intro.RecipientId, intro.RequesterId)) || blocked.Contains((intro.RequesterId, intro.RecipientId))) continue;
+                if (!institutions.TryGetValue(intro.InstitutionId, out var institution) || institution.Status != "Active" || institution.DisabledFeatures.Contains(InstitutionFeatures.Introductions)) continue;
+
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.IntroductionUpdate(
+                    intro.InstitutionId, intro.RecipientId, $"{from.FirstName} is still waiting to hear from you",
+                    $"{from.FirstName} {from.LastName} asked to connect with you a few days ago. Open your requests to see who it is and reply.",
+                    intro.Id, "reminder", external: true), logger);
+                reminded++;
+            }
+
+            await introductionRepo.UpdateRangeAsync(due);
+            return reminded;
+        }, "send introduction reminders", "all");
+
     [Activity("ScheduledJobs.WrapUpExpiredBirthdays")]
     public virtual Task<int> WrapUpExpiredBirthdaysAsync(string institutionId, DateTime now) =>
         Wrap(async () =>

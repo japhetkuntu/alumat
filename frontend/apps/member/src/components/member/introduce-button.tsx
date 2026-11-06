@@ -50,6 +50,7 @@ export function IntroduceButton({ memberId, firstName, person }: { memberId: str
     qc.invalidateQueries({ queryKey: ["intro-state", memberId] });
     qc.invalidateQueries({ queryKey: ["intros"] });
     qc.invalidateQueries({ queryKey: ["intro-summary"] });
+    qc.invalidateQueries({ queryKey: ["intro-any"] });
   };
 
   const send = useMutation({

@@ -34,6 +34,9 @@ public class Introduction : BaseEntity, ITenantScoped
     /// <summary>When each side last opened the conversation. A message is unread for a side when it is newer than this.</summary>
     public DateTime? RequesterReadAt { get; set; }
     public DateTime? RecipientReadAt { get; set; }
+
+    /// <summary>When the recipient was reminded, once, that this request is still waiting. Null until then. A request is never reminded twice.</summary>
+    public DateTime? ReminderSentAt { get; set; }
 }
 
 public static class IntroductionStatuses

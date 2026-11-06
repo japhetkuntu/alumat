@@ -552,6 +552,47 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         // For a member who is away from the app: a phone or desktop alert. Same words as the in-app notice, which never carry a message or a note.
         // (The page itself stays quiet when the member is looking at the app: see public/sw.js.)
         await SendPushIfEligibleAsync(request.NoticeRecipientId!, "Member", notification.Title, notification.Body, notification.ActionUrl);
+        // Someone asking to connect is the one notice worth reaching a member who has stopped visiting: email, and a text if they opted in.
+        if (request.NoticeExternal && Workflow.Patched("intro-external-alerts"))
+            await SendIntroductionExternalAsync(request, institution, notification.Title, notification.Body, notification.ActionUrl);
+    }
+
+    private async Task SendIntroductionExternalAsync(NotificationRequest request, InstitutionContactInfo? institution, string title, string body, string actionUrl)
+    {
+        var member = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(request.NoticeRecipientId!), NotificationActivityOptions.DatabaseRead);
+        if (member is null) return;
+
+        await SendExternalAlertsAsync(member.Phone, member.SmsAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, body, actionUrl);
+
+        if (string.IsNullOrWhiteSpace(member.Email) || institution?.EmailNotificationsEnabled == false) return;
+        // Expression-tree lambdas cannot hold a collection expression or a null-propagating call, so these are resolved first.
+        var brandName = institution is null ? null : institution.PortalName;
+        var brandColor = institution is null ? null : institution.PrimaryColorHex;
+        var brandSecondaryColor = institution is null ? null : institution.SecondaryColorHex;
+        var brandLogo = institution is null ? null : institution.LogoUrl;
+        var emailRequest = new SendEmailRequest
+        {
+            To = new List<EmailContact> { new() { Email = member.Email, Name = member.FirstName } },
+            TemplateId = "notification",
+            TemplateVariables = new
+            {
+                first_name = member.FirstName,
+                title,
+                body,
+                badge_label = "Connection request",
+                pref_label = "you are a member of this community",
+                action_url = actionUrl,
+                action_label = "See who it is",
+                image_url = string.Empty,
+                brand_name = brandName,
+                brand_color = brandColor,
+                brand_secondary_color = brandSecondaryColor,
+                brand_logo = brandLogo,
+            },
+        };
+        var context = $"introduction email to {member.Email}";
+        var sent = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendEmailAsync(emailRequest, context), NotificationActivityOptions.ExternalGateway);
+        if (!sent) Workflow.Logger.LogWarning("Introduction email reported failure for {Email}", member.Email);
     }
 
     private async Task ProcessForumReplyAsync(NotificationRequest request)

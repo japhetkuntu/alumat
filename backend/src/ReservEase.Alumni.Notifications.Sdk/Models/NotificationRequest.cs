@@ -52,6 +52,8 @@ public sealed class NotificationRequest
     public string? NoticeBody { get; init; }
     /// <summary>Makes this notice distinct from an earlier one with the same words (the platform drops exact repeats). Set per message.</summary>
     public string? NoticeKey { get; init; }
+    /// <summary>For <see cref="NotificationKind.IntroductionUpdate"/>: also reach a member who is away from the app, by email, and by text if they opted in. Only for someone asking to connect, where a reply is awaited.</summary>
+    public bool NoticeExternal { get; init; }
     public string? Area { get; init; }
     public bool? Accepted { get; init; }
     public string? ThreadAuthorId { get; init; }
@@ -147,10 +149,10 @@ public sealed class NotificationRequest
         MentorMemberId = mentorMemberId, MenteeName = menteeName, Area = area, RequestId = requestId,
     };
 
-    public static NotificationRequest IntroductionUpdate(string institutionId, string recipientMemberId, string title, string body, string introductionId, string? noticeKey = null) => new()
+    public static NotificationRequest IntroductionUpdate(string institutionId, string recipientMemberId, string title, string body, string introductionId, string? noticeKey = null, bool external = false) => new()
     {
         Kind = NotificationKind.IntroductionUpdate, InstitutionId = institutionId,
-        NoticeRecipientId = recipientMemberId, NoticeTitle = title, NoticeBody = body, RequestId = introductionId, NoticeKey = noticeKey,
+        NoticeRecipientId = recipientMemberId, NoticeTitle = title, NoticeBody = body, RequestId = introductionId, NoticeKey = noticeKey, NoticeExternal = external,
     };
 
     public static NotificationRequest MentorshipRequestDecision(string institutionId, string menteeId, bool accepted, string area, string requestId) => new()

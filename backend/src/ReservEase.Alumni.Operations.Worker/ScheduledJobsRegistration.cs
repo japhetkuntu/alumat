@@ -37,6 +37,12 @@ public static class ScheduledJobsRegistration
                 new WorkflowOptions { Id = "birthday-spotlight-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
             TimeSpan.FromHours(6));
 
+        await EnsureScheduleAsync(client, logger, "introduction-reminder-schedule",
+            ScheduleActionStartWorkflow.Create<IntroductionReminderDispatchWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "introduction-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(6));
+
         await EnsureScheduleAsync(client, logger, "recurring-giving-schedule",
             ScheduleActionStartWorkflow.Create<RecurringGivingWorkflow>(
                 wf => wf.RunAsync(),

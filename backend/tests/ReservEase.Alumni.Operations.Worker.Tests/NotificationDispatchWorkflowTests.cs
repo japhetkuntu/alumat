@@ -95,6 +95,49 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
     private static PushSubscriptionEntity Device(string owner, string type = "Member") =>
         new() { Id = $"dev-{owner}-{type}", InstitutionId = Inst, OwnerId = owner, OwnerType = type, Endpoint = $"https://push/{owner}/{type}", P256dhKey = "p", AuthKey = "a", IsActive = true };
 
+    // ── Introductions ───────────────────────────────────────────────────
+
+    [WorkflowFact]
+    public async Task A_connection_request_reaches_a_member_by_email_and_never_carries_the_note()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person("them"), Pref("them"));
+
+        await Send(rig, NotificationRequest.IntroductionUpdate(Inst, "them", "Ama would like to connect with you", "Ama would like to be introduced to you. Open your requests to read their note.", "intro-1", external: true));
+
+        var email = Assert.Single(rig.EmailsSent);
+        Assert.Equal("them@x.com", email.To.Single().Email);
+        var vars = System.Text.Json.JsonSerializer.Serialize(email.TemplateVariables);
+        Assert.Contains("Ama would like to connect with you", vars);
+        Assert.Contains("/connections/intro-1", vars);
+        Assert.Empty(rig.SmsSent);   // a text is only for a member who opted in
+    }
+
+    [WorkflowFact]
+    public async Task A_member_who_opted_in_to_texts_gets_one_for_a_connection_request()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person("them"), Pref("them", sms: true));
+
+        await Send(rig, NotificationRequest.IntroductionUpdate(Inst, "them", "Ama would like to connect with you", "Ama would like to be introduced to you.", "intro-1", external: true));
+
+        Assert.Single(rig.SmsSent);
+        Assert.Contains("Ama would like to be introduced to you.", rig.SmsSent[0]);
+    }
+
+    [WorkflowFact]
+    public async Task An_ordinary_introduction_notice_stays_in_the_app_and_does_not_email_or_text()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person("them"), Pref("them", sms: true));
+
+        await Send(rig, NotificationRequest.IntroductionUpdate(Inst, "them", "New message", "Ama sent you a message.", "intro-1", "m1"));
+
+        Assert.Empty(rig.EmailsSent);
+        Assert.Empty(rig.SmsSent);
+        Assert.Single(await rig.Notes());
+    }
+
     // ── Fan-out alerts ──────────────────────────────────────────────────
 
     [WorkflowFact]

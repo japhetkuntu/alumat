@@ -149,8 +149,8 @@ public class MemberIntroductionService(
     private void Tell(string memberId, string kind, string introductionId)
         => events.Publish(currentTenant.InstitutionId!, memberId, new IntroductionEvent(kind, introductionId));
 
-    private Task Notify(string recipientId, string title, string body, string introductionId, string? key = null)
-        => temporalProvider.EnqueueNotificationAsync(NotificationRequest.IntroductionUpdate(currentTenant.InstitutionId!, recipientId, title, body, introductionId, key), logger);
+    private Task Notify(string recipientId, string title, string body, string introductionId, string? key = null, bool external = false)
+        => temporalProvider.EnqueueNotificationAsync(NotificationRequest.IntroductionUpdate(currentTenant.InstitutionId!, recipientId, title, body, introductionId, key, external), logger);
 
     public async Task<IApiResponse<IntroductionStateDto>> GetStateAsync(string memberId, AuthData me)
     {
@@ -228,7 +228,9 @@ public class MemberIntroductionService(
             intro.Reason = protector.Protect(reason, FieldContext(intro.Id, ReasonField));
             await introRepo.AddAsync(intro);
             Tell(request.MemberId, "request", intro.Id);
-            await Notify(request.MemberId, "Someone would like an introduction", $"{me.Name} would like to be introduced to you. Open your requests to read their note.", intro.Id);
+            // A request is the one notice worth reaching a member who has not opened the app lately: by email, and by text if they opted in.
+            // It names who asked and never carries the note.
+            await Notify(request.MemberId, $"{me.Name} would like to connect with you", $"{me.Name} would like to be introduced to you. Open your requests to read their note.", intro.Id, external: true);
 
             logger.LogInformation("Introduction {IntroductionId} requested by {MemberId}", intro.Id, me.Id);
             return new IntroductionStateDto("pending", intro.Id, intro.CreatedAt).ToCreatedApiResponse("Request sent");

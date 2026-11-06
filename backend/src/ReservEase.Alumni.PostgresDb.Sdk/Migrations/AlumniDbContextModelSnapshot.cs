@@ -2126,6 +2126,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<DateTime?>("RecipientReadAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("ReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("RequesterId")
                         .IsRequired()
                         .HasColumnType("text");

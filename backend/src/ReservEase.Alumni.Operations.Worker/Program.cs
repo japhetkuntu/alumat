@@ -78,6 +78,7 @@ builder.Services
     .AddHostedTemporalWorker(OperationsTaskQueues.ScheduledJobs)
     .AddWorkflow<DigestDispatchWorkflow>()
     .AddWorkflow<BirthdaySpotlightDispatchWorkflow>()
+    .AddWorkflow<IntroductionReminderDispatchWorkflow>()
     .AddWorkflow<RecurringGivingWorkflow>()
     .AddWorkflow<MembershipReminderDispatchWorkflow>()
     .AddWorkflow<EventReminderDispatchWorkflow>()

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatures } from "@/components/member/member-layout";
-import { getCommunities, getEvents, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
+import { hasAnyIntroduction, getCommunities, getEvents, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
 
 function subscribeDirectoryVisits(notify: () => void) {
   window.addEventListener("storage", notify);
@@ -30,6 +30,7 @@ export function MemberSetupChecklist() {
   const contributionsEnabled = features.enabled("Contributions");
   const directoryEnabled = features.enabled("Directory");
   const communitiesEnabled = features.enabled("Communities");
+  const introductionsEnabled = features.enabled("Introductions") && directoryEnabled;
   const directoryVisited = useSyncExternalStore(subscribeDirectoryVisits, () => {
     if (!user?.id) return false;
     try { return localStorage.getItem(directoryVisitedKey(user.id)) === "1"; } catch { return false; }
@@ -41,6 +42,7 @@ export function MemberSetupChecklist() {
   const myCommunities = useQuery({ queryKey: ["m-my-communities"], queryFn: getMyCommunities, enabled: communitiesEnabled });
   const rsvps = useQuery({ queryKey: ["m-rsvps"], queryFn: () => getMyRsvps(), enabled: eventsEnabled });
 
+  const connected = useQuery({ queryKey: ["intro-any"], queryFn: hasAnyIntroduction, enabled: introductionsEnabled, staleTime: 5 * 60_000, retry: false });
   const upcoming = useQuery({ queryKey: ["m-setup-upcoming-events"], queryFn: () => getEvents(1, 10, "Upcoming"), enabled: eventsEnabled, staleTime: 5 * 60 * 1000 });
 
   // A failed load isn't "not done yet": hide rather than tell a member to redo steps they may have finished.
@@ -93,6 +95,16 @@ export function MemberSetupChecklist() {
               profile.data?.graduationYear ? `/directory?year=${profile.data.graduationYear}` : "/directory",
             );
           },
+        }]
+      : []),
+    ...(introductionsEnabled && connected.isSuccess
+      ? [{
+          id: "connect",
+          title: "Say hello to a fellow alum",
+          description: "Ask someone in the directory for an introduction. If they accept, you can chat privately.",
+          done: connected.data === true,
+          actionLabel: "Find someone",
+          onAction: () => router.push("/directory"),
         }]
       : []),
     ...(allCommunities.isSuccess && myCommunities.isSuccess && (allCommunities.data?.length ?? 0) > 0

@@ -40,7 +40,8 @@ public sealed class ScheduledJobsRig
             Tenant, Paystack.Object, PaystackConfig, Temporal.Object,
             Options.Create(new MailtrapConfig()), new ConfigurationBuilder().AddInMemoryCollection(Config).Build(), Log,
             R<Community>(db), R<CommunityMembership>(db), R<Poll>(db), R<PollParticipation>(db),
-            new ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine(R<Poll>(db), R<PollPosition>(db), R<PollAspirant>(db), R<PollParticipation>(db), R<PollVote>(db), R<MemberEntity>(db), R<CommunityMembership>(db)));
+            new ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine(R<Poll>(db), R<PollPosition>(db), R<PollAspirant>(db), R<PollParticipation>(db), R<PollVote>(db), R<MemberEntity>(db), R<CommunityMembership>(db)),
+            R<Introduction>(db), R<MemberBlock>(db));
     }
 
     private static AlumniPgRepository<T> R<T>(AlumniDbContext db) where T : BaseEntity => new(db);

@@ -60,8 +60,10 @@ function LoadMore({ hasMore, loading, onMore, root }: { hasMore: boolean; loadin
 function Row({ item, active, children }: { item: IntroItem; active: boolean; children: React.ReactNode }) {
   return (
     <li>
+      {/* The marker for the open conversation is its own bar, not a border: a border here picked up the page's default border colour and showed on every row. */}
       <Link href={`/connections/${item.id}`} aria-current={active ? "page" : undefined}
-        className={cn("flex items-center gap-3 border-l-[3px] px-4 py-3 transition-colors hover:bg-muted/60", active ? "border-l-primary bg-primary/[0.06]" : "border-l-transparent")}>
+        className={cn("relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60", active && "bg-primary/[0.06]")}>
+        {active && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-primary" />}
         <UserAvatar src={item.other.photoUrl} name={item.other.name} size="lg" />
         {children}
       </Link>

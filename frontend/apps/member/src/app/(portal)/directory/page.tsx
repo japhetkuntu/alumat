@@ -20,7 +20,7 @@ import { ensureAbsoluteUrl } from "@alumni/ui";
 import type { Member } from "@/types";
 import { DirectoryMemberCard } from "@/components/member/directory-member-card";
 import { useVisualViewportHeight } from "@/hooks/use-visual-viewport-height";
-import { useNavTheme, useCohortPhrase } from "@/components/member/member-layout";
+import { useNavTheme, useCohortPhrase, useFeatures } from "@/components/member/member-layout";
 
 const currentYear    = new Date().getFullYear();
 const GRAD_YEAR_START = 1952;
@@ -58,6 +58,7 @@ export default function MemberDirectoryPage() {
   const vvHeight = useVisualViewportHeight();
   const { data: navTheme } = useNavTheme();
   const cohort = useCohortPhrase();
+  const introductionsOn = useFeatures().enabled("Introductions");
   const isCommunity = navTheme?.organizationType === "Community";
   const { data: me } = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile, staleTime: 5 * 60_000 });
   const myYear = me?.graduationYear && me.graduationYear > 0 ? String(me.graduationYear) : "";
@@ -170,7 +171,7 @@ export default function MemberDirectoryPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {suggestions.data!.map(({ member: m, reasons }) => (
               <div key={m.id} className="flex flex-col gap-1.5">
-                <DirectoryMemberCard member={m} selected={selected?.id === m.id} isCommunity={isCommunity}
+                <DirectoryMemberCard member={m} selected={selected?.id === m.id} isCommunity={isCommunity} canConnect={introductionsOn && m.id !== me?.id}
                   onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
                 <p className="px-1 text-[12.5px] text-muted-foreground">{reasons.slice(0, 2).join(" · ")}</p>
               </div>
@@ -201,7 +202,7 @@ export default function MemberDirectoryPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {members.map(m => (
-              <DirectoryMemberCard key={m.id} member={m} selected={selected?.id === m.id} isCommunity={isCommunity}
+              <DirectoryMemberCard key={m.id} member={m} selected={selected?.id === m.id} isCommunity={isCommunity} canConnect={introductionsOn && m.id !== me?.id}
                 onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
             ))}
           </div>

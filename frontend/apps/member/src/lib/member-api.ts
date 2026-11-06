@@ -1325,6 +1325,13 @@ export async function getIntroductions(box: IntroBox, opts: { cursor?: string | 
   const res = await memberClient.get("/introductions", { params: { box, cursor: opts.cursor || undefined, q: opts.q || undefined, limit: opts.limit } });
   return res.data.data!;
 }
+/** Whether this member has ever asked anyone to connect, or been connected: three one-row reads. Used to decide who still needs to be shown how. */
+export async function hasAnyIntroduction(): Promise<boolean> {
+  const [chats, sent, archived] = await Promise.all([
+    getIntroductions("chats", { limit: 1 }), getIntroductions("sent", { limit: 1 }), getIntroductions("archived", { limit: 1 }),
+  ]);
+  return chats.items.length + sent.items.length + archived.items.length > 0;
+}
 export async function getIntroSummary(): Promise<IntroSummary> {
   const res = await memberClient.get("/introductions/summary");
   return res.data.data!;
