@@ -1,0 +1,3 @@
+{
+  "/(portal)/business-directory/[id]/page": "app/(portal)/business-directory/[id]/page.js"
+}

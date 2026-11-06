@@ -1,0 +1,3 @@
+{
+  "/campaigns/[token]/page": "app/campaigns/[token]/page.js"
+}

@@ -1,0 +1,3 @@
+module.exports=[58427,a=>{"use strict";var b=a.i(70249);let c="Why Not Run Your Community on WhatsApp? | "+b.SITE_NAME,d="WhatsApp groups cap at 1,024 members, have no real search, no directory, and are a documented fraud target. See the sourced comparison and what a real community portal gives you instead.";async function e(){let a=await (0,b.getRequestOrigin)(),e=`${a}/why-not-whatsapp`;return{title:{absolute:c},description:d,alternates:{canonical:e},openGraph:{title:c,description:d,url:e,type:"article"},twitter:{card:"summary_large_image",title:c,description:d}}}function f({children:a}){return a}a.s(["default",()=>f,"generateMetadata",()=>e])}];
+
+//# sourceMappingURL=apps_member_src_app_why-not-whatsapp_layout_tsx_6c1ee9a3._.js.map

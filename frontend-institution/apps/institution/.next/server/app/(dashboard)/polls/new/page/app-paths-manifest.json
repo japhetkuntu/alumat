@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/polls/new/page": "app/(dashboard)/polls/new/page.js"
+}
