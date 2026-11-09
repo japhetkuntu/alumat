@@ -13,7 +13,7 @@ export function StoreCartBar() {
   const { count: cartCount, total: cartTotal } = useCartSummary();
   if (cartCount === 0) return null;
   return (
-    <div className="fixed left-0 right-[4.75rem] z-30 pl-3 lg:hidden" style={{ bottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
+    <div className="fixed left-0 right-[4.75rem] z-30 pl-3 lg:hidden" style={{ bottom: "calc(4rem + var(--nav-pad))" }}>
       <Link
         href="/store/cart"
         className="flex h-12 items-center justify-between gap-3 bg-primary px-4 text-[14px] font-semibold text-primary-foreground shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"

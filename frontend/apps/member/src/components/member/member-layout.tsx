@@ -444,7 +444,7 @@ function MobileBottomNav() {
     <div
       className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t"
       style={{
-        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingBottom: "var(--nav-pad)",
         background: "color-mix(in oklch, var(--background) 92%, transparent)",
         backdropFilter: "blur(20px)",
         borderColor: "var(--border)",
@@ -636,7 +636,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
             fixed + backdrop-blur layer can fail to redraw after a sibling blur
             layer (a modal overlay, the notification panel) unmounts. */}
         <div
-          className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6 h-[calc(3.5rem+env(safe-area-inset-top))] sm:h-[calc(4rem+env(safe-area-inset-top))] border-b border-border/40 bg-background/80 backdrop-blur-xl"
+          className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6 h-[calc(3.5rem_+_env(safe-area-inset-top))] sm:h-[calc(4rem_+_env(safe-area-inset-top))] border-b border-border/40 bg-background/80 backdrop-blur-xl"
           style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
         >
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -663,7 +663,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-[calc(3.5rem+env(safe-area-inset-top))] sm:pt-[calc(4rem+env(safe-area-inset-top))] lg:pt-0 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0 scroll-touch">
+        <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-[calc(3.5rem_+_env(safe-area-inset-top))] sm:pt-[calc(4rem_+_env(safe-area-inset-top))] lg:pt-0 pb-[calc(6rem_+_var(--nav-pad))] lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
               {myProfile?.integrationBanner && <PartnerBanner {...myProfile.integrationBanner} />}

@@ -876,6 +876,14 @@ button:active:not(:disabled), [role="button"]:active:not(:disabled) {
 
 /* ─── Mobile App Feel ───────────────────────────────────────────────── */
 
+/* Space the mobile bottom nav (and what sits above it) leaves for the home indicator. Browsers report the inset; an installed iOS app
+   reports 0 unless the page opts into viewport-fit=cover, which would push every other page under the status bar, so installed
+   apps get a floor instead of letting the nav sit on the indicator. */
+:root { --nav-pad: env(safe-area-inset-bottom, 0px); }
+@media (display-mode: standalone) {
+  :root { --nav-pad: max(env(safe-area-inset-bottom, 0px), 14px); }
+}
+
 /* Safe area insets for modern phones (notch, dynamic island, home indicator) */
 @supports (padding: env(safe-area-inset-top)) {
   .safe-top { padding-top: env(safe-area-inset-top); }

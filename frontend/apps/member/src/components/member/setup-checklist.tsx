@@ -137,7 +137,7 @@ export function MemberSetupChecklist() {
       items={items}
       loading={loading}
       storageKey={`member-get-started:${user?.id ?? "anon"}`}
-      className="bottom-[5.5rem] lg:bottom-4"
+      className="bottom-[calc(5.5rem_+_var(--nav-pad))] lg:bottom-4"
     />
   );
 }
