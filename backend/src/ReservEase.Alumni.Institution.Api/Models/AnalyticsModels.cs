@@ -35,7 +35,7 @@ public record AnalyticsDuesYearGroupDto(int YearGroup, int Eligible, int Paid);
 /// <param name="PayersThisYear">Different members who made a successful contribution this year.</param>
 public record AnalyticsMoneyDto(decimal ThisYear, decimal LastYearToDate, int PayersThisYear, List<AnalyticsMoneyMonthDto> Months);
 
-public record AnalyticsMoneyMonthDto(int Year, int Month, decimal Contributions, decimal Store, decimal Services);
+public record AnalyticsMoneyMonthDto(int Year, int Month, decimal Contributions, decimal Store, decimal Services, decimal Tickets = 0m);
 
 /// <summary>Who the approved members are. Each list is largest first; departments and locations keep the top few.</summary>
 public record AnalyticsCompositionDto(List<AnalyticsSliceDto> ByYearGroup, List<AnalyticsSliceDto> ByDepartment, List<AnalyticsSliceDto> ByLocation, int WithoutLocation);

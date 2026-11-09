@@ -263,7 +263,12 @@ public class UpdateInstitutionPaymentsRequest
 /// <summary>How money moved for one institution — gross collected online, the platform's cut, and the institution's net.</summary>
 public record InstitutionRevenueResponse(
     string InstitutionId, decimal GrossCollected, decimal PlatformFeeTotal,
-    decimal NetToInstitution, int ConfirmedPaymentCount);
+    decimal NetToInstitution, int ConfirmedPaymentCount,
+    // Where the collected money was paid into: the institution's own account first, then each group or year group with an account of its
+    // own. The amounts add up to GrossCollected, so nothing collected goes missing from the page.
+    List<AccountCollectedDto>? ByAccount = null);
+
+public record AccountCollectedDto(string Name, bool IsMain, decimal Amount, int Count);
 
 /// <summary>
 /// One payment record, normalized across both payment sources (Contributions
@@ -280,7 +285,9 @@ public record PlatformPaymentDto(
     decimal PlatformFeeAmount, decimal GatewayFeeAmount,
     // What the platform actually earned on this payment: the same figure the dashboard and the institution's revenue totals add
     // up, so the rows in this list sum to those totals. PlatformFeeAmount above is only the fee quoted to the payer.
-    decimal PlatformEarnedAmount);
+    decimal PlatformEarnedAmount,
+    // The group or year group account this payment was paid into. Null when it went to the institution's own account.
+    string? AccountName = null);
 
 /// <summary>One line item within a StoreOrder-sourced payment's detail view.</summary>
 public record PaymentDetailItemDto(

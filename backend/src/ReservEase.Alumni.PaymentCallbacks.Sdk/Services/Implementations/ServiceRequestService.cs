@@ -63,11 +63,11 @@ public class ServiceRequestService(
 
     /// <summary>Mirrors StoreOrderService/ContributionService.BuildZeroDeductionCharge — the institution nets 100% of totalAmount, our fee is collected from the payer's grossed-up charge.</summary>
     private (long amountSubunit, long? transactionCharge, string? bearer, decimal platformFee, decimal gatewayFee, decimal transactionChargeAmount, decimal grossCharge)
-        BuildZeroDeductionCharge(decimal totalAmount, Institution? institution)
+        BuildZeroDeductionCharge(decimal totalAmount, Institution? institution, string? settlementSubaccount = null)
     {
         var totalSubunit = (long)Math.Round(totalAmount * 100m, MidpointRounding.AwayFromZero);
 
-        if (institution is null || string.IsNullOrEmpty(institution.PaystackSubaccountCode))
+        if (institution is null || (string.IsNullOrEmpty(institution.PaystackSubaccountCode) && string.IsNullOrEmpty(settlementSubaccount)))
             return (totalSubunit, null, null, 0m, 0m, 0m, totalAmount);
 
         var charge = PaystackFeeCalculator.CalculateZeroDeductionCharge(
@@ -193,7 +193,9 @@ public class ServiceRequestService(
             };
 
             var currentInstitution = await GetCurrentInstitutionAsync();
-            var charge = BuildZeroDeductionCharge(serviceType.Price, currentInstitution);
+            var settlementSubaccount = await SettlementAccounts.ForServiceAsync(batchRepo, communityRepo, currentTenant.InstitutionId, serviceType.SettlementTarget, serviceType.CommunityId)
+                ?? currentInstitution?.PaystackSubaccountCode;
+            var charge = BuildZeroDeductionCharge(serviceType.Price, currentInstitution, settlementSubaccount);
 
             logger.LogInformation(
                 "Zero-Deduction charge for service request by member {MemberId}, institution {InstitutionId}: amount={Amount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}",
@@ -234,8 +236,7 @@ public class ServiceRequestService(
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
                 Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "serviceRequest", "true" } },
                 // The service's own account choice (a group's by default when it is for a group), else the institution's.
-                Subaccount = await SettlementAccounts.ForServiceAsync(batchRepo, communityRepo, currentTenant.InstitutionId, serviceType.SettlementTarget, serviceType.CommunityId)
-                    ?? currentInstitution?.PaystackSubaccountCode,
+                Subaccount = settlementSubaccount,
                 TransactionCharge = charge.transactionCharge,
                 Bearer = charge.bearer,
             });

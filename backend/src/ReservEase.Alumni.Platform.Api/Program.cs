@@ -66,6 +66,7 @@ builder.Services.AddPlatformControllers();
 
 // Application services
 builder.Services.AddScoped<IPlatformAuthService, PlatformAuthService>();
+builder.Services.AddScoped<PaymentAccountResolver>();
 builder.Services.AddScoped<IInstitutionManagementService, InstitutionManagementService>();
 builder.Services.AddScoped<IInstitutionIntegrationService, InstitutionIntegrationService>();
 builder.Services.AddScoped<IPlatformMemberService, PlatformMemberService>();

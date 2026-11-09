@@ -134,7 +134,9 @@ public class AnalyticsService(
             var contributionsOn = On(InstitutionFeatures.Contributions);
             var storeOn = isSuper && On(InstitutionFeatures.Store);
             var servicesOn = isSuper && On(InstitutionFeatures.Services);
-            if (contributionsOn || storeOn || servicesOn)
+            // Paid event tickets are money too, wherever the event's account is. They belong to an event, not a campaign, so they follow Store and Services.
+            var ticketsOn = isSuper && On(InstitutionFeatures.Events);
+            if (contributionsOn || storeOn || servicesOn || ticketsOn)
             {
                 var yearStart = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
                 var lastYearStart = yearStart.AddYears(-1);
@@ -168,6 +170,11 @@ public class AnalyticsService(
                         .Select(r => new PaymentPoint { At = r.ConfirmedAt ?? r.CreatedAt, Amount = r.Amount }))
                     : ([], 0m, 0m);
 
+                var ticketSums = ticketsOn
+                    ? await Summarise(rsvpRepo.GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0)
+                        .Select(r => new PaymentPoint { At = r.PaidAt ?? r.CreatedAt, Amount = r.AmountPaid ?? 0m }))
+                    : ([], 0m, 0m);
+
                 decimal MonthTotal(List<(int Year, int Month, decimal Total)> rows, int year, int month) =>
                     rows.Where(r => r.Year == year && r.Month == month).Sum(r => r.Total);
 
@@ -177,13 +184,14 @@ public class AnalyticsService(
                     : 0;
 
                 money = new AnalyticsMoneyDto(
-                    contributionSums.ThisYear + storeSums.ThisYear + serviceSums.ThisYear,
-                    contributionSums.LastYear + storeSums.LastYear + serviceSums.LastYear,
+                    contributionSums.ThisYear + storeSums.ThisYear + serviceSums.ThisYear + ticketSums.ThisYear,
+                    contributionSums.LastYear + storeSums.LastYear + serviceSums.LastYear + ticketSums.LastYear,
                     payers,
                     Months(trendStart).Select(m => new AnalyticsMoneyMonthDto(m.Year, m.Month,
                         MonthTotal(contributionSums.Months, m.Year, m.Month),
                         MonthTotal(storeSums.Months, m.Year, m.Month),
-                        MonthTotal(serviceSums.Months, m.Year, m.Month))).ToList());
+                        MonthTotal(serviceSums.Months, m.Year, m.Month),
+                        MonthTotal(ticketSums.Months, m.Year, m.Month))).ToList());
             }
 
             // ── Composition ──────────────────────────────────────────────────

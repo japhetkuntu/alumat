@@ -92,11 +92,12 @@ public class ContributionService : IContributionService
     /// behavior for those institutions rather than blocking payment.
     /// </summary>
     private (long amountSubunit, long? transactionCharge, string? bearer, decimal platformFee, decimal gatewayFee, decimal transactionChargeAmount, decimal grossCharge)
-        BuildZeroDeductionCharge(decimal schoolAmount, Institution? institution)
+        BuildZeroDeductionCharge(decimal schoolAmount, Institution? institution, string? settlementSubaccount = null)
     {
         var schoolAmountSubunit = (long)Math.Round(schoolAmount * 100m, MidpointRounding.AwayFromZero);
 
-        if (institution is null || string.IsNullOrEmpty(institution.PaystackSubaccountCode))
+        // A group's or year group's own account counts too: the charge is split whenever the payment goes into an account.
+        if (institution is null || (string.IsNullOrEmpty(institution.PaystackSubaccountCode) && string.IsNullOrEmpty(settlementSubaccount)))
         {
             return (schoolAmountSubunit, null, null, 0m, 0m, 0m, schoolAmount);
         }
@@ -356,8 +357,8 @@ public class ContributionService : IContributionService
             if (request.SetupRecurringGiving && currentInstitution is { } inst && inst.DisabledFeatures.Contains(InstitutionFeatures.RecurringGiving))
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Recurring giving is not enabled for this institution.");
 
-            var charge = BuildZeroDeductionCharge(request.Amount, currentInstitution);
             var subaccount = await ResolveSubaccountAsync(campaign, currentInstitution);
+            var charge = BuildZeroDeductionCharge(request.Amount, currentInstitution, subaccount);
 
             // The subaccount's own dashboard config always shows a static
             // 0%-platform/100%-institution split (deliberate — see
@@ -523,8 +524,8 @@ public class ContributionService : IContributionService
 
             var amount = amountPerYear * request.Years;
             var currentInstitution = await GetCurrentInstitutionAsync();
-            var charge = BuildZeroDeductionCharge(amount, currentInstitution);
             var subaccount = await ResolveSubaccountAsync(campaign, currentInstitution);
+            var charge = BuildZeroDeductionCharge(amount, currentInstitution, subaccount);
 
             // See the matching log in InitiatePaystackPaymentAsync — the
             // subaccount's dashboard config always shows a static

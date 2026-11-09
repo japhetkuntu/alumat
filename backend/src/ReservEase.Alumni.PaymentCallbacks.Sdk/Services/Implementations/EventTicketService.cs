@@ -105,7 +105,10 @@ public class EventTicketService(
                         "This event is full right now. If someone's payment doesn't go through a seat may free up, so try again in a few minutes.");
             }
 
-            var charge = ZeroDeductionCharge.Build(paystackConfig, price, institution);
+            // A group's event pays into the group's own account once it has an approved one, otherwise the institution's.
+            var settlementSubaccount = await SettlementAccounts.ForAudienceAsync(null, communityRepo, currentTenant.InstitutionId, null, ev.CommunityId)
+                ?? institution?.PaystackSubaccountCode;
+            var charge = ZeroDeductionCharge.Build(paystackConfig, price, institution, settlementSubaccount);
             var reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.EventTicket);
 
             // Persist the pending ticket BEFORE telling Paystack, so any callback for this reference has a matching row.
@@ -136,9 +139,7 @@ public class EventTicketService(
                 Amount = charge.AmountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
                 Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "eventTicket", "true" }, { "eventId", ev.Id } },
-                // A group's event pays into the group's own account once it has an approved one, otherwise the institution's.
-                Subaccount = await SettlementAccounts.ForAudienceAsync(null, communityRepo, currentTenant.InstitutionId, null, ev.CommunityId)
-                    ?? institution?.PaystackSubaccountCode,
+                Subaccount = settlementSubaccount,
                 TransactionCharge = charge.TransactionChargeSubunit,
                 Bearer = charge.Bearer,
             });

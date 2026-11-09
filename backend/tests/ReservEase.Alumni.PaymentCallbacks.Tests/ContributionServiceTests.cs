@@ -61,7 +61,7 @@ public class ContributionServiceTests
                 TestDb.Tenant(Tenant, "umat"), Paystack.Object, new PaystackConfig { GatewayFeePercentage = 1.95m, GatewayFeeSafetyBufferSubunit = 2 },
                 Redis, Temporal.Object,
                 new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PaystackConfig:CallbackUrl"] = "https://app.test/pay" }).Build(),
-                NullLogger<ContributionService>.Instance);
+                NullLogger<ContributionService>.Instance, new AlumniPgRepository<Community>(db));
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName, Tenant);
@@ -336,6 +336,52 @@ public class ContributionServiceTests
         var init = rig.Initialized.Single();
         Assert.Equal("ACCT_BATCH", init.Subaccount);
         Assert.Equal(PaystackFeeCalculator.CalculateZeroDeductionCharge(10000, 2m, 1.95m, 0, null, 2).ChargeAmountSubunit, init.Amount);
+    }
+
+    [Fact]
+    public async Task A_year_groups_own_account_is_still_split_so_the_platform_earns_its_fee_even_before_the_institution_has_an_account()
+    {
+        var rig = new Rig(i => i.PlatformFeePercentage = 2m);   // the institution has no Paystack account of its own yet
+        var campaign = Campaign(); campaign.YearGroups = [2018];
+        await rig.Add(campaign, ApprovedBatch(2018));
+
+        await rig.Service.InitiatePaystackPaymentAsync(new InitiatePaystackPaymentRequest("c1", 100), rig.Member);
+
+        var expected = PaystackFeeCalculator.CalculateZeroDeductionCharge(10000, 2m, 1.95m, 0, null, 2);
+        var init = rig.Initialized.Single();
+        var tx = await rig.OnlyTransaction();
+        Assert.Equal((expected.ChargeAmountSubunit, expected.TransactionChargeSubunit, "account", "ACCT_BATCH"), (init.Amount, init.TransactionCharge, init.Bearer, init.Subaccount));
+        Assert.Equal(100m, tx.Amount);   // what the year group is owed is untouched
+        Assert.Equal(expected.TransactionChargeSubunit / 100m, tx.TransactionChargeAmount);   // and the platform's share is recorded
+    }
+
+    [Fact]
+    public async Task A_groups_own_account_is_still_split_even_before_the_institution_has_an_account()
+    {
+        var rig = new Rig(i => i.PlatformFeePercentage = 2m);
+        var campaign = Campaign(); campaign.CommunityId = "g1";
+        await rig.Add(campaign, new Community { Id = "g1", Name = "Accra Chapter", PayoutStatus = "Approved", PaystackSubaccountCode = "ACCT_GROUP" });
+
+        await rig.Service.InitiatePaystackPaymentAsync(new InitiatePaystackPaymentRequest("c1", 100), rig.Member);
+
+        var init = rig.Initialized.Single();
+        Assert.Equal(("ACCT_GROUP", "account"), (init.Subaccount, init.Bearer));
+        Assert.True(init.TransactionCharge > 0);
+    }
+
+    [Theory]
+    [InlineData("Pending")]
+    [InlineData("None")]
+    public async Task A_group_account_that_is_not_live_and_no_institution_account_means_a_plain_unsplit_charge(string payoutStatus)
+    {
+        var rig = new Rig(i => i.PlatformFeePercentage = 2m);
+        var campaign = Campaign(); campaign.CommunityId = "g1";
+        await rig.Add(campaign, new Community { Id = "g1", Name = "Accra Chapter", PayoutStatus = payoutStatus, PaystackSubaccountCode = "ACCT_GROUP" });
+
+        await rig.Service.InitiatePaystackPaymentAsync(new InitiatePaystackPaymentRequest("c1", 100), rig.Member);
+
+        var init = rig.Initialized.Single();
+        Assert.Equal((10000L, (long?)null, (string?)null), (init.Amount, init.TransactionCharge, init.Subaccount));
     }
 
     [Theory]

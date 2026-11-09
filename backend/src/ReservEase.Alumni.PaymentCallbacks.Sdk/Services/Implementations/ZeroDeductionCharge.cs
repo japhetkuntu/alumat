@@ -12,11 +12,15 @@ public readonly record struct ZeroDeductionCharge(
     long AmountSubunit, long? TransactionChargeSubunit, string? Bearer,
     decimal PlatformFee, decimal GatewayFee, decimal TransactionChargeAmount, decimal GrossCharge)
 {
-    public static ZeroDeductionCharge Build(PaystackConfig paystackConfig, decimal totalAmount, Institution? institution)
+    /// <summary>
+    /// <paramref name="settlementSubaccount"/> is the account the payment is actually paid into: a group's or year group's own account
+    /// can be live when the institution's own is not yet, and the charge must still be split so the platform earns its fee on it.
+    /// </summary>
+    public static ZeroDeductionCharge Build(PaystackConfig paystackConfig, decimal totalAmount, Institution? institution, string? settlementSubaccount = null)
     {
         var totalSubunit = (long)Math.Round(totalAmount * 100m, MidpointRounding.AwayFromZero);
 
-        if (institution is null || string.IsNullOrEmpty(institution.PaystackSubaccountCode))
+        if (institution is null || (string.IsNullOrEmpty(institution.PaystackSubaccountCode) && string.IsNullOrEmpty(settlementSubaccount)))
             return new ZeroDeductionCharge(totalSubunit, null, null, 0m, 0m, 0m, totalAmount);
 
         var charge = PaystackFeeCalculator.CalculateZeroDeductionCharge(

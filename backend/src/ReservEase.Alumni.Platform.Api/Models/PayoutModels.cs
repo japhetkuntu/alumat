@@ -8,9 +8,13 @@ public record InstitutionPayoutForecast(
     string InstitutionName,
     bool PayoutsConfigured,
     PayoutWindowDto LastPayout,
-    PayoutWindowDto NextPayout);
+    PayoutWindowDto NextPayout,
+    // Money in the same windows that is paid straight into a group's or year group's own account instead of the institution's. It is
+    // not part of LastPayout/NextPayout, but it is collected money all the same, so the platform sees it here.
+    PayoutWindowDto? LastOtherAccounts = null,
+    PayoutWindowDto? NextOtherAccounts = null);
 
-public record PayoutForecastTotals(PayoutWindowDto LastPayout, PayoutWindowDto NextPayout);
+public record PayoutForecastTotals(PayoutWindowDto LastPayout, PayoutWindowDto NextPayout, PayoutWindowDto? LastOtherAccounts = null, PayoutWindowDto? NextOtherAccounts = null);
 
 public record PlatformPayoutForecastResponse(
     PayoutForecastTotals Totals,

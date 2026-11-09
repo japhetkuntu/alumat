@@ -53,7 +53,8 @@ public class InstitutionManagementService(
     IAlumniPgRepository<PlatformStaff> platformStaffRepo,
     IAuditLogService auditLog, IPaystackService paystackService,
     IConfiguration config, ITemporalClientProvider temporalProvider, IOptions<MailtrapConfig> mailtrapConfigOptions,
-    IRedisService<PlatformRedisConfig> cache, IStaffScope staffScope, ILogger<InstitutionManagementService> logger)
+    IRedisService<PlatformRedisConfig> cache, IStaffScope staffScope, ILogger<InstitutionManagementService> logger,
+    PaymentAccountResolver? accountResolver = null)
     : IInstitutionManagementService
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
@@ -806,30 +807,37 @@ public class InstitutionManagementService(
         var confirmedRequests = (await serviceRequestRepo.GetAllAsync(r => r.InstitutionId == id && r.PaymentStatus == "Successful", ignoreQueryFilters: true)).ToList();
         var confirmedTickets = (await eventRsvpRepo.GetAllAsync(r => r.InstitutionId == id && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0, ignoreQueryFilters: true)).ToList();
 
-        // A campaign targeting exactly one batch settles straight into that
-        // batch's own Paystack subaccount once its payout setup is approved
-        // (see Member.Api's ContributionService.ResolveSubaccountAsync) — that
-        // money never reaches this institution's own account, so it must be
-        // excluded from "Gross collected"/"Net to institution" here or those
-        // labels would overstate what this institution actually receives.
-        // The platform still earns its fee identically either way (the payer's
-        // grossed-up charge, same PlatformFeePercentage, regardless of which
-        // subaccount gets the institution's share) — so "Platform fee" below
-        // deliberately keeps every contribution, batch-settled or not.
-        var institutionSettledContributions = await ExcludeBatchSettledAsync(confirmed);
-
-        // Zero-Deduction model: our actual revenue is PlatformRevenueAmount
-        // (Contribution) / PlatformFeeAmount (StoreOrder, ServiceRequest — same
-        // charge-building logic, just not carrying Contribution's legacy
-        // pre-Zero-Deduction field name); net to each is always equal to gross
-        // now (nothing deducted). Store orders and service requests included
-        // alongside contributions — they earn the platform fee identically,
-        // through the same Zero-Deduction charge.
-        var gross = institutionSettledContributions.Sum(c => c.Amount) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount) + confirmedTickets.Sum(r => r.AmountPaid ?? 0m);
+        // Every payment counts as collected, whichever account it was paid into: a group's or year group's own account still belongs to
+        // this institution's community, and the platform earns its fee identically either way. Where each payment went is shown
+        // separately (ByAccount), so a year group's money is visible instead of being left out of the totals.
+        //
+        // Zero-Deduction model: our actual revenue is PlatformRevenueAmount (Contribution) / PlatformFeeAmount (StoreOrder,
+        // ServiceRequest, tickets); nothing is ever deducted from what the institution is owed, so net equals gross.
+        var gross = confirmed.Sum(c => c.Amount) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount) + confirmedTickets.Sum(r => r.AmountPaid ?? 0m);
         var fee = confirmed.Sum(c => c.PlatformRevenueAmount) + confirmedOrders.Sum(o => o.PlatformFeeAmount) + confirmedRequests.Sum(r => r.PlatformFeeAmount) + confirmedTickets.Sum(r => r.PlatformFeeAmount);
-        var net = institutionSettledContributions.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount) + confirmedTickets.Sum(r => r.AmountPaid ?? 0m);
+        var net = confirmed.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount) + confirmedTickets.Sum(r => r.AmountPaid ?? 0m);
+        var count = confirmed.Count + confirmedOrders.Count + confirmedRequests.Count + confirmedTickets.Count;
 
-        return new InstitutionRevenueResponse(id, gross, fee, net, institutionSettledContributions.Count + confirmedOrders.Count + confirmedRequests.Count + confirmedTickets.Count).ToOkApiResponse();
+        List<AccountCollectedDto>? byAccount = null;
+        if (accountResolver is not null)
+        {
+            var accounts = await accountResolver.LoadAsync(id, confirmed, confirmedTickets, confirmedRequests);
+            var lines = new Dictionary<string, (decimal Amount, int Count)>();
+            void Add(string? account, decimal amount)
+            {
+                var key = account ?? PaymentAccountResolver.MainAccount;
+                var cur = lines.GetValueOrDefault(key);
+                lines[key] = (cur.Amount + amount, cur.Count + 1);
+            }
+            foreach (var c in confirmed) Add(accounts.For(c), c.Amount);
+            foreach (var t in confirmedTickets) Add(accounts.For(t), t.AmountPaid ?? 0m);
+            foreach (var r in confirmedRequests) Add(accounts.For(r), r.Amount);
+            foreach (var o in confirmedOrders) Add(null, o.TotalAmount);   // store orders always settle into the institution's own account
+            byAccount = lines.OrderByDescending(l => l.Key == PaymentAccountResolver.MainAccount).ThenByDescending(l => l.Value.Amount)
+                .Select(l => new AccountCollectedDto(l.Key, l.Key == PaymentAccountResolver.MainAccount, l.Value.Amount, l.Value.Count)).ToList();
+        }
+
+        return new InstitutionRevenueResponse(id, gross, fee, net, count, byAccount).ToOkApiResponse();
 
         }
         catch (Exception e)
@@ -837,49 +845,6 @@ public class InstitutionManagementService(
             logger.LogError(e, "GetRevenueAsync failed");
             return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionRevenueResponse>("Failed to getrevenue");
         }}
-
-    /// <summary>
-    /// A campaign targeting exactly one batch settles straight into that
-    /// batch's own Paystack subaccount once its payout setup is approved
-    /// (see Member.Api's ContributionService.ResolveSubaccountAsync, which
-    /// this mirrors) — money that never reaches the institution's own
-    /// account. Deliberately duplicated in Platform.Api's own PayoutService
-    /// rather than shared, same as the rest of that file's own comment
-    /// explains for why cross-tenant code here stays separate.
-    /// </summary>
-    private async Task<List<ContributionEntity>> ExcludeBatchSettledAsync(List<ContributionEntity> contributions)
-    {
-        if (contributions.Count == 0)
-            return contributions;
-
-        var campaignIds = contributions.Select(c => c.CampaignId).Distinct().ToList();
-        var campaigns = await campaignRepo.GetQueryable(c => campaignIds.Contains(c.Id), ignoreQueryFilters: true)
-            .ToDictionaryAsync(c => c.Id);
-
-        var singleBatchYears = campaigns.Values
-            .Where(c => c.YearGroups is { Count: 1 })
-            .Select(c => c.YearGroups![0])
-            .Distinct()
-            .ToList();
-        if (singleBatchYears.Count == 0)
-            return contributions;
-
-        var approvedBatchYears = (await batchRepo.GetQueryable(
-                b => b.InstitutionId == contributions[0].InstitutionId && singleBatchYears.Contains(b.Year)
-                     && b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null,
-                ignoreQueryFilters: true)
-                .Select(b => b.Year)
-                .ToListAsync())
-            .ToHashSet();
-        if (approvedBatchYears.Count == 0)
-            return contributions;
-
-        return contributions
-            .Where(c => !(campaigns.TryGetValue(c.CampaignId, out var campaign)
-                          && campaign.YearGroups is { Count: 1 } yg
-                          && approvedBatchYears.Contains(yg[0])))
-            .ToList();
-    }
 
     /// <summary>
     /// Every payment an institution has ever collected — Contributions, Store
@@ -940,10 +905,14 @@ public class InstitutionManagementService(
         if (pageSize < 1 || pageSize > 200) pageSize = 20;
 
         var payments = new List<PlatformPaymentDto>();
+        // Which account each payment was paid into, so the platform can see where the money went, not just that it was collected.
+        var contributions = new List<ContributionEntity>();
+        var tickets = new List<EventRsvpEntity>();
+        var requests = new List<ServiceRequestEntity>();
 
         if (string.IsNullOrEmpty(source) || source == "Contribution")
         {
-            var contributions = await contributionRepo.GetAllAsync(c => string.IsNullOrEmpty(id) || c.InstitutionId == id, ignoreQueryFilters: true);
+            contributions = (await contributionRepo.GetAllAsync(c => string.IsNullOrEmpty(id) || c.InstitutionId == id, ignoreQueryFilters: true)).ToList();
             payments.AddRange(contributions.Select(c => new PlatformPaymentDto(
                 c.Id, "Contribution", c.InstitutionId,
                 c.Member is null ? null : $"{c.Member.FirstName} {c.Member.LastName}", c.Member?.Email,
@@ -966,7 +935,7 @@ public class InstitutionManagementService(
 
         if (string.IsNullOrEmpty(source) || source == "ServiceRequest")
         {
-            var requests = await serviceRequestRepo.GetAllAsync(r => string.IsNullOrEmpty(id) || r.InstitutionId == id, ignoreQueryFilters: true);
+            requests = (await serviceRequestRepo.GetAllAsync(r => string.IsNullOrEmpty(id) || r.InstitutionId == id, ignoreQueryFilters: true)).ToList();
             payments.AddRange(requests.Select(r => new PlatformPaymentDto(
                 r.Id, "ServiceRequest", r.InstitutionId,
                 r.Member is null ? null : $"{r.Member.FirstName} {r.Member.LastName}", r.Member?.Email,
@@ -979,7 +948,7 @@ public class InstitutionManagementService(
         if (string.IsNullOrEmpty(source) || source == "EventTicket")
         {
             // Only tickets whose payment was actually started: free RSVPs are not payments.
-            var tickets = (await eventRsvpRepo.GetAllAsync(r => r.TransactionRef != null && (string.IsNullOrEmpty(id) || r.InstitutionId == id), ignoreQueryFilters: true)).ToList();
+            tickets = (await eventRsvpRepo.GetAllAsync(r => r.TransactionRef != null && (string.IsNullOrEmpty(id) || r.InstitutionId == id), ignoreQueryFilters: true)).ToList();
             var eventIds = tickets.Select(t => t.EventId).Distinct().ToList();
             var memberIds = tickets.Select(t => t.MemberId).Distinct().ToList();
             var titles = (await eventRepo.GetAllAsync(e => eventIds.Contains(e.Id), ignoreQueryFilters: true)).ToDictionary(e => e.Id, e => e.Title);
@@ -1003,6 +972,20 @@ public class InstitutionManagementService(
         var totalCount = ordered.Count;
         var pageItems = ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        if (accountResolver is not null && pageItems.Count > 0)
+        {
+            var onPage = pageItems.Select(p => p.Id).ToHashSet();
+            var pageContributions = contributions.Where(c => onPage.Contains(c.Id)).ToList();
+            var pageTickets = tickets.Where(t => onPage.Contains(t.Id)).ToList();
+            var pageRequests = requests.Where(r => onPage.Contains(r.Id)).ToList();
+            var accounts = await accountResolver.LoadAsync(id, pageContributions, pageTickets, pageRequests);
+            var named = pageContributions.ToDictionary(c => c.Id, c => accounts.For(c))
+                .Concat(pageTickets.ToDictionary(t => t.Id, t => accounts.For(t)))
+                .Concat(pageRequests.ToDictionary(r => r.Id, r => accounts.For(r)))
+                .Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value!);
+            pageItems = pageItems.Select(p => named.TryGetValue(p.Id, out var account) ? p with { AccountName = account } : p).ToList();
+        }
 
         var result = new PgPagedResult<PlatformPaymentDto>
         {

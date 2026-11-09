@@ -51,14 +51,40 @@ public class PayoutService(
             .Select(i => new { i.Id, i.Name, i.PaystackSubaccountCode })
             .ToListAsync();
 
-        var lastContribs = await ExcludeBatchSettledAsync(await FetchContributionsAsync(windows.LastWindowStart, windows.LastWindowEnd));
+        // Each window is read once in full; the part that settles into the institution's own account is what is left after taking out
+        // what goes into a group's or year group's own account, and the part taken out is shown beside it.
+        var lastContribsAll = await FetchContributionsAsync(windows.LastWindowStart, windows.LastWindowEnd);
+        var nextContribsAll = await FetchContributionsAsync(windows.NextWindowStart, windows.NextWindowEnd);
+        var lastRequestsAll = await FetchServiceRequestsAsync(windows.LastWindowStart, windows.LastWindowEnd);
+        var nextRequestsAll = await FetchServiceRequestsAsync(windows.NextWindowStart, windows.NextWindowEnd);
+        var lastTicketsAll = await FetchTicketsAsync(windows.LastWindowStart, windows.LastWindowEnd);
+        var nextTicketsAll = await FetchTicketsAsync(windows.NextWindowStart, windows.NextWindowEnd);
+
+        var lastContribs = await ExcludeBatchSettledAsync(lastContribsAll);
         var lastOrders = await FetchOrdersAsync(windows.LastWindowStart, windows.LastWindowEnd);
-        var lastRequests = await ExcludeAccountSettledRequestsAsync(await FetchServiceRequestsAsync(windows.LastWindowStart, windows.LastWindowEnd));
-        var lastTickets = await ExcludeGroupSettledTicketsAsync(await FetchTicketsAsync(windows.LastWindowStart, windows.LastWindowEnd));
-        var nextContribs = await ExcludeBatchSettledAsync(await FetchContributionsAsync(windows.NextWindowStart, windows.NextWindowEnd));
+        var lastRequests = await ExcludeAccountSettledRequestsAsync(lastRequestsAll);
+        var lastTickets = await ExcludeGroupSettledTicketsAsync(lastTicketsAll);
+        var nextContribs = await ExcludeBatchSettledAsync(nextContribsAll);
         var nextOrders = await FetchOrdersAsync(windows.NextWindowStart, windows.NextWindowEnd);
-        var nextRequests = await ExcludeAccountSettledRequestsAsync(await FetchServiceRequestsAsync(windows.NextWindowStart, windows.NextWindowEnd));
-        var nextTickets = await ExcludeGroupSettledTicketsAsync(await FetchTicketsAsync(windows.NextWindowStart, windows.NextWindowEnd));
+        var nextRequests = await ExcludeAccountSettledRequestsAsync(nextRequestsAll);
+        var nextTickets = await ExcludeGroupSettledTicketsAsync(nextTicketsAll);
+
+        // What went elsewhere, per institution: everything read, less what stayed with the institution's own account.
+        static Dictionary<string, (decimal Amount, int Count)> Elsewhere<T>(List<T> all, List<T> kept, Func<T, string> institution, Func<T, decimal> amount) where T : class
+        {
+            var stayed = kept.ToHashSet();
+            return all.Where(x => !stayed.Contains(x)).GroupBy(institution).ToDictionary(g => g.Key, g => (g.Sum(amount), g.Count()));
+        }
+        static (decimal Amount, int Count) Add((decimal Amount, int Count) a, (decimal Amount, int Count) b) => (a.Amount + b.Amount, a.Count + b.Count);
+        (decimal Amount, int Count) OtherFor(string institutionId, Dictionary<string, (decimal, int)> a, Dictionary<string, (decimal, int)> b, Dictionary<string, (decimal, int)> c) =>
+            Add(Add(a.GetValueOrDefault(institutionId), b.GetValueOrDefault(institutionId)), c.GetValueOrDefault(institutionId));
+
+        var lastOtherContribs = Elsewhere(lastContribsAll, lastContribs, c => c.InstitutionId, c => c.Amount);
+        var lastOtherRequests = Elsewhere(lastRequestsAll, lastRequests, r => r.InstitutionId, r => r.Amount);
+        var lastOtherTickets = Elsewhere(lastTicketsAll, lastTickets, t => t.InstitutionId, t => t.AmountPaid ?? 0m);
+        var nextOtherContribs = Elsewhere(nextContribsAll, nextContribs, c => c.InstitutionId, c => c.Amount);
+        var nextOtherRequests = Elsewhere(nextRequestsAll, nextRequests, r => r.InstitutionId, r => r.Amount);
+        var nextOtherTickets = Elsewhere(nextTicketsAll, nextTickets, t => t.InstitutionId, t => t.AmountPaid ?? 0m);
 
         var perInstitution = institutions.Select(inst =>
         {
@@ -72,18 +98,24 @@ public class PayoutService(
                             + nextRequests.Where(r => r.InstitutionId == inst.Id).Sum(r => r.Amount)
                             + nextTickets.Where(t => t.InstitutionId == inst.Id).Sum(t => t.AmountPaid ?? 0m);
             var nextCount = nextContribs.Count(c => c.InstitutionId == inst.Id) + nextOrders.Count(o => o.InstitutionId == inst.Id) + nextRequests.Count(r => r.InstitutionId == inst.Id) + nextTickets.Count(t => t.InstitutionId == inst.Id);
+            var lastOther = OtherFor(inst.Id, lastOtherContribs, lastOtherRequests, lastOtherTickets);
+            var nextOther = OtherFor(inst.Id, nextOtherContribs, nextOtherRequests, nextOtherTickets);
 
             return new InstitutionPayoutForecast(
                 inst.Id, inst.Name, !string.IsNullOrWhiteSpace(inst.PaystackSubaccountCode),
                 new PayoutWindowDto(windows.LastPayoutDate, lastAmount, lastCount),
-                new PayoutWindowDto(windows.NextPayoutDate, nextAmount, nextCount));
+                new PayoutWindowDto(windows.NextPayoutDate, nextAmount, nextCount),
+                new PayoutWindowDto(windows.LastPayoutDate, lastOther.Amount, lastOther.Count),
+                new PayoutWindowDto(windows.NextPayoutDate, nextOther.Amount, nextOther.Count));
         })
-        .OrderByDescending(f => f.NextPayout.Amount)
+        .OrderByDescending(f => f.NextPayout.Amount + (f.NextOtherAccounts?.Amount ?? 0m))
         .ToList();
 
         var totals = new PayoutForecastTotals(
             new PayoutWindowDto(windows.LastPayoutDate, perInstitution.Sum(f => f.LastPayout.Amount), perInstitution.Sum(f => f.LastPayout.TransactionCount)),
-            new PayoutWindowDto(windows.NextPayoutDate, perInstitution.Sum(f => f.NextPayout.Amount), perInstitution.Sum(f => f.NextPayout.TransactionCount)));
+            new PayoutWindowDto(windows.NextPayoutDate, perInstitution.Sum(f => f.NextPayout.Amount), perInstitution.Sum(f => f.NextPayout.TransactionCount)),
+            new PayoutWindowDto(windows.LastPayoutDate, perInstitution.Sum(f => f.LastOtherAccounts?.Amount ?? 0m), perInstitution.Sum(f => f.LastOtherAccounts?.TransactionCount ?? 0)),
+            new PayoutWindowDto(windows.NextPayoutDate, perInstitution.Sum(f => f.NextOtherAccounts?.Amount ?? 0m), perInstitution.Sum(f => f.NextOtherAccounts?.TransactionCount ?? 0)));
 
         return new PlatformPayoutForecastResponse(totals, perInstitution).ToOkApiResponse();
 

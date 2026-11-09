@@ -130,14 +130,21 @@ public class AnalyticsServiceTests
             Paid("a", "c", 100),
             new StoreOrder { Status = "Successful", TotalAmount = 60, ConfirmedAt = Now, CreatedAt = Now },
             new ServiceRequest { PaymentStatus = "Successful", Amount = 25, ConfirmedAt = Now, CreatedAt = Now },
+            // A paid ticket is money too, and an unpaid or free one is not.
+            new EventRsvp { MemberId = "a", Status = EventRsvpStatuses.Confirmed, AmountPaid = 40, PaidAt = Now, CreatedAt = Now },
+            new EventRsvp { MemberId = "b", Status = EventRsvpStatuses.PendingPayment, AmountPaid = 40, CreatedAt = Now },
+            new EventRsvp { MemberId = "c", Status = EventRsvpStatuses.Confirmed, AmountPaid = 0, PaidAt = Now, CreatedAt = Now },
         };
 
-        var all = (await Run(await Create(seed))).Money!.Months[^1];
+        var all = (await Run(await Create(seed))).Money!;
         var noStore = (await Run(await Create(seed), null, InstitutionFeatures.Store)).Money!.Months[^1];
+        var noEvents = (await Run(await Create(seed), null, InstitutionFeatures.Events)).Money!;
 
-        Assert.Equal((60m, 25m), (all.Store, all.Services));
+        Assert.Equal((60m, 25m, 40m), (all.Months[^1].Store, all.Months[^1].Services, all.Months[^1].Tickets));
+        Assert.Equal(100m + 60m + 25m + 40m, all.ThisYear);
         Assert.Equal((0m, 25m), (noStore.Store, noStore.Services));
-        Assert.Null((await Run(await Create(seed), null, InstitutionFeatures.Contributions, InstitutionFeatures.Store, InstitutionFeatures.Services)).Money);
+        Assert.Equal((0m, 100m + 60m + 25m), (noEvents.Months[^1].Tickets, noEvents.ThisYear));
+        Assert.Null((await Run(await Create(seed), null, InstitutionFeatures.Contributions, InstitutionFeatures.Store, InstitutionFeatures.Services, InstitutionFeatures.Events)).Money);
     }
 
     // ── Composition ─────────────────────────────────────────────────────────

@@ -442,11 +442,26 @@ public class ReportDataBuilder(
                     r.ConfirmedAt ?? r.CreatedAt, institutions.GetValueOrDefault(r.InstitutionId), "Service request", SnapshotName(r.Member), r.Member?.Email, r.ServiceTypeName,
                     r.Amount, r.PlatformFeeAmount, r.GatewayFeeAmount, r.GrossChargeAmount, r.PaymentMethod, r.PaymentStatus, r.TransactionRef,
                 ];
+
+        // Tickets that were actually paid for, or tried: a free RSVP has no payment. The status words match the other sources.
+        var ticketStatus = status switch { null => null, "Successful" => EventRsvpStatuses.Confirmed, "Pending" => EventRsvpStatuses.PendingPayment, _ => EventRsvpStatuses.PaymentFailed };
+        var tickets = rsvpRepo
+            .GetQueryable(r => r.TransactionRef != null && (ticketStatus == null || r.Status == ticketStatus)
+                && (from == null || (r.PaidAt ?? r.CreatedAt) >= from) && (to == null || (r.PaidAt ?? r.CreatedAt) < to), ignoreQueryFilters: true)
+            .AsNoTracking().OrderByDescending(r => r.PaidAt ?? r.CreatedAt).ThenBy(r => r.Id);
+        await foreach (var page in PagesAsync(tickets, ct))
+            foreach (var t in page)
+                yield return
+                [
+                    t.PaidAt ?? t.CreatedAt, institutions.GetValueOrDefault(t.InstitutionId), "Event ticket", null, null, "Event ticket",
+                    t.AmountPaid ?? 0m, t.PlatformFeeAmount, t.GatewayFeeAmount, t.GrossChargeAmount, "Paystack",
+                    t.Status == EventRsvpStatuses.Confirmed ? "Successful" : t.Status == EventRsvpStatuses.PendingPayment ? "Pending" : "Failed", t.TransactionRef,
+                ];
     }
 
     private ReportData PlatformRevenue(ReportJob job) => new(
         [
-            new("Institution"), new("Month"), new("Contributions", Money), new("Store", Money), new("Services", Money),
+            new("Institution"), new("Month"), new("Contributions", Money), new("Store", Money), new("Services", Money), new("Tickets", Money),
             new("Collected", Money), new("Our earnings", Money), new("Payments", Number),
         ],
         PlatformRevenueRows(job));
@@ -470,6 +485,7 @@ public class ReportDataBuilder(
                 Contributions = g.Where(x => x.Source == "Contribution").Sum(x => x.Collected),
                 Store = g.Where(x => x.Source == "Store").Sum(x => x.Collected),
                 Services = g.Where(x => x.Source == "Service").Sum(x => x.Collected),
+                Tickets = g.Where(x => x.Source == "Ticket").Sum(x => x.Collected),
                 Earned = g.Sum(x => x.Earned),
                 Payments = g.Sum(x => x.Payments),
             })
@@ -479,13 +495,13 @@ public class ReportDataBuilder(
             yield return
             [
                 r.Name, new DateTime(r.Year, r.Month, 1).ToString("MMM yyyy", CultureInfo.InvariantCulture),
-                r.Contributions, r.Store, r.Services, r.Contributions + r.Store + r.Services, r.Earned, r.Payments,
+                r.Contributions, r.Store, r.Services, r.Tickets, r.Contributions + r.Store + r.Services + r.Tickets, r.Earned, r.Payments,
             ];
     }
 
     private record MoneyRow(string InstitutionId, int Year, int Month, string Source, decimal Collected, decimal Earned, int Payments);
 
-    /// <summary>Successful payments from all three sources, summed per institution per month. Small however much was paid: one row per institution, month and source.</summary>
+    /// <summary>Successful payments from all four sources (contributions, store orders, service requests and event tickets), summed per institution per month. Small however much was paid: one row per institution, month and source.</summary>
     private async Task<List<MoneyRow>> MoneyByInstitutionAsync(DateTime? from, DateTime? to, CancellationToken ct)
     {
         var contributions = await contributionRepo
@@ -507,9 +523,18 @@ public class ReportDataBuilder(
             .Select(g => new { g.Key.InstitutionId, g.Key.Year, g.Key.Month, Collected = g.Sum(r => r.Amount), Earned = g.Sum(r => r.PlatformFeeAmount), Payments = g.Count() })
             .ToListAsync(ct);
 
+        // Paid event tickets: money collected like any other, whichever account the event pays into.
+        var tickets = await rsvpRepo
+            .GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0
+                && (from == null || (r.PaidAt ?? r.CreatedAt) >= from) && (to == null || (r.PaidAt ?? r.CreatedAt) < to), ignoreQueryFilters: true)
+            .GroupBy(r => new { r.InstitutionId, (r.PaidAt ?? r.CreatedAt).Year, (r.PaidAt ?? r.CreatedAt).Month })
+            .Select(g => new { g.Key.InstitutionId, g.Key.Year, g.Key.Month, Collected = g.Sum(r => r.AmountPaid ?? 0m), Earned = g.Sum(r => r.PlatformFeeAmount), Payments = g.Count() })
+            .ToListAsync(ct);
+
         return
         [
             .. contributions.Select(x => new MoneyRow(x.InstitutionId, x.Year, x.Month, "Contribution", x.Collected, x.Earned, x.Payments)),
+            .. tickets.Select(x => new MoneyRow(x.InstitutionId, x.Year, x.Month, "Ticket", x.Collected, x.Earned, x.Payments)),
             .. orders.Select(x => new MoneyRow(x.InstitutionId, x.Year, x.Month, "Store", x.Collected, x.Earned, x.Payments)),
             .. requests.Select(x => new MoneyRow(x.InstitutionId, x.Year, x.Month, "Service", x.Collected, x.Earned, x.Payments)),
         ];

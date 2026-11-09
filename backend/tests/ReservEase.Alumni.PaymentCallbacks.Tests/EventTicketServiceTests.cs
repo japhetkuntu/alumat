@@ -61,7 +61,7 @@ public class EventTicketServiceTests
                 new AlumniPgRepository<AlumniEvent>(db), new AlumniPgRepository<EventRsvp>(db), new AlumniPgRepository<Institution>(db),
                 new AlumniPgRepository<CommunityMembership>(db), TestDb.Tenant(Tenant, "umat"), Paystack.Object, PaystackConfig, Temporal.Object,
                 new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PaystackConfig:CallbackUrl"] = "https://app.test/pay" }).Build(),
-                NullLogger<EventTicketService>.Instance);
+                NullLogger<EventTicketService>.Instance, new AlumniPgRepository<Community>(db));
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName, Tenant);
@@ -83,6 +83,38 @@ public class EventTicketServiceTests
     private static EventTicketRequest Buy(string eventId = "e1") => new() { EventId = eventId };
 
     // ── Starting a payment ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task A_groups_event_is_paid_into_the_groups_own_account_and_still_earns_the_platform_its_fee()
+    {
+        var rig = new Rig(payout: false);   // the institution has no account of its own yet; the group does
+        var ev = PaidEvent(price: 100m); ev.CommunityId = "g1";
+        await rig.Seed(ev, new Community { Id = "g1", Name = "Accra Chapter", PayoutStatus = "Approved", PaystackSubaccountCode = "ACCT_GROUP" },
+            new CommunityMembership { Id = "cm", CommunityId = "g1", MemberId = "m1", Status = "Approved" });
+
+        var response = await rig.Service.InitiateAsync(Buy(), rig.Me);
+
+        Assert.Equal(200, response.Code);
+        var sent = Assert.Single(rig.Initialized);
+        Assert.Equal(("ACCT_GROUP", "account"), (sent.Subaccount, sent.Bearer));
+        Assert.True(sent.TransactionCharge > 0);
+        var rsvp = await rig.Db().EventRsvps.SingleAsync();
+        Assert.Equal(100m, rsvp.AmountPaid);     // the group is owed the full ticket price
+        Assert.True(rsvp.PlatformFeeAmount > 0);   // and the platform's fee is recorded, so it shows in the platform's totals
+    }
+
+    [Fact]
+    public async Task A_groups_event_without_a_live_group_account_pays_into_the_institutions_account()
+    {
+        var rig = new Rig();
+        var ev = PaidEvent(price: 100m); ev.CommunityId = "g1";
+        await rig.Seed(ev, new Community { Id = "g1", Name = "Accra Chapter", PayoutStatus = "Pending", PaystackSubaccountCode = "ACCT_GROUP" },
+            new CommunityMembership { Id = "cm", CommunityId = "g1", MemberId = "m1", Status = "Approved" });
+
+        await rig.Service.InitiateAsync(Buy(), rig.Me);
+
+        Assert.Equal("ACCT_x", Assert.Single(rig.Initialized).Subaccount);
+    }
 
     [Fact]
     public async Task Buying_a_ticket_saves_a_pending_seat_and_charges_more_than_the_price_so_the_institution_gets_it_all()

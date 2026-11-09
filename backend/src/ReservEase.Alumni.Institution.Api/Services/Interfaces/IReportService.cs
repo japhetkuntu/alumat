@@ -4,7 +4,8 @@ using ReservEase.Alumni.Common.Sdk.Models;
 namespace ReservEase.Alumni.Institution.Api.Services.Interfaces;
 
 /// <summary>One calendar month of paid revenue, split by source. Amounts are money actually received (successful payments only).</summary>
-public record RevenueTrendMonthDto(int Year, int Month, decimal Contributions, decimal Store, decimal Services);
+/// <summary>One month's money by source. Tickets are paid event tickets, whichever account they were paid into.</summary>
+public record RevenueTrendMonthDto(int Year, int Month, decimal Contributions, decimal Store, decimal Services, decimal Tickets = 0m);
 
 /// <summary>The months, plus how many payments (all time, within this admin's scope) sit in each status, for the "Payment status mix" donut.</summary>
 public record RevenueTrendDto(List<RevenueTrendMonthDto> Months, Dictionary<string, int> StatusCounts);

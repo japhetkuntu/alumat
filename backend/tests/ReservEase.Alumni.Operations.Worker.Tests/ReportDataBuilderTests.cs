@@ -323,4 +323,51 @@ public class ReportDataBuilderTests
         Assert.Equal([60m, 0m], ReportRig.Column(data, rows, "Store"));
         Assert.Equal([3, 1], ReportRig.Column(data, rows, "Payments"));
     }
+
+    [Fact]
+    public async Task Paid_event_tickets_are_money_collected_in_the_overview_and_the_monthly_revenue()
+    {
+        var march = new DateTime(2026, 3, 5, 0, 0, 0, DateTimeKind.Utc);
+        var builder = await Create(
+            new Institution { Id = Ours, Name = "Alpha", Slug = "alpha" },
+            Paid("a", "c", 100, on: march),
+            new EventRsvp { InstitutionId = Ours, EventId = "e", MemberId = "a", Status = EventRsvpStatuses.Confirmed, AmountPaid = 30, PlatformFeeAmount = 1, PaidAt = march, CreatedAt = march, TransactionRef = "t1" },
+            new EventRsvp { InstitutionId = Ours, EventId = "e", MemberId = "b", Status = EventRsvpStatuses.PendingPayment, AmountPaid = 30, CreatedAt = march, TransactionRef = "t2" },
+            new EventRsvp { InstitutionId = Ours, EventId = "e", MemberId = "c", Status = EventRsvpStatuses.Confirmed, AmountPaid = 0, PaidAt = march, CreatedAt = march });
+
+        var overview = builder.Build(new ReportJob { ReportType = ReportTypes.PlatformInstitutions, Audience = ReportAudiences.Platform });
+        Assert.Equal([130m], ReportRig.Column(overview, await ReportRig.Rows(overview), "Collected, all time"));
+
+        var revenue = builder.Build(new ReportJob
+        {
+            ReportType = ReportTypes.PlatformRevenue, Audience = ReportAudiences.Platform,
+            Parameters = new() { [ReportParameters.From] = "2026-01-01", [ReportParameters.To] = "2026-12-31" },
+        });
+        var rows = await ReportRig.Rows(revenue);
+        Assert.Equal([30m], ReportRig.Column(revenue, rows, "Tickets"));
+        Assert.Equal([130m], ReportRig.Column(revenue, rows, "Collected"));
+        Assert.Equal([2], ReportRig.Column(revenue, rows, "Payments"));
+    }
+
+    [Fact]
+    public async Task The_payments_export_lists_event_tickets_that_were_paid_for_or_tried_but_not_free_rsvps()
+    {
+        var at = new DateTime(2026, 3, 5, 0, 0, 0, DateTimeKind.Utc);
+        var builder = await Create(
+            new Institution { Id = Ours, Name = "Alpha", Slug = "alpha" },
+            new EventRsvp { InstitutionId = Ours, EventId = "e", MemberId = "a", Status = EventRsvpStatuses.Confirmed, AmountPaid = 30, PaidAt = at, CreatedAt = at, TransactionRef = "t1" },
+            new EventRsvp { InstitutionId = Ours, EventId = "e", MemberId = "b", Status = EventRsvpStatuses.PendingPayment, AmountPaid = 30, CreatedAt = at, TransactionRef = "t2" },
+            new EventRsvp { InstitutionId = Ours, EventId = "e", MemberId = "c", Status = EventRsvpStatuses.Confirmed, AmountPaid = 0, PaidAt = at, CreatedAt = at });
+
+        var all = builder.Build(new ReportJob { ReportType = ReportTypes.PlatformPayments, Audience = ReportAudiences.Platform });
+        var rows = await ReportRig.Rows(all);
+        Assert.Equal(["Event ticket", "Event ticket"], ReportRig.Column(all, rows, "Source"));
+
+        var paid = builder.Build(new ReportJob
+        {
+            ReportType = ReportTypes.PlatformPayments, Audience = ReportAudiences.Platform,
+            Parameters = new() { [ReportParameters.Status] = "Successful" },
+        });
+        Assert.Equal([30m], ReportRig.Column(paid, await ReportRig.Rows(paid), "Amount"));
+    }
 }

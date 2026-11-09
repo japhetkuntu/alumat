@@ -21,6 +21,7 @@ public class ReportService(
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
     IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
+    IAlumniPgRepository<EventRsvp> eventRsvpRepo,
     ICurrentTenantService currentTenant,
     IRedisService<InstitutionRedisConfig> cache,
     ILogger<ReportService> logger) : IReportService
@@ -102,6 +103,14 @@ public class ReportService(
                     .ToListAsync()
                 : [];
 
+            // Paid event tickets, wherever the event's money is paid into. Like Store and Services they carry no campaign, so only a SuperAdmin sees them.
+            var ticketRows = isSuper
+                ? await eventRsvpRepo.GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0 && (r.PaidAt ?? r.CreatedAt) >= first)
+                    .GroupBy(r => new { (r.PaidAt ?? r.CreatedAt).Year, (r.PaidAt ?? r.CreatedAt).Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(r => r.AmountPaid ?? 0m) })
+                    .ToListAsync()
+                : [];
+
             var statusCounts = new Dictionary<string, int>();
             void AddCounts(IEnumerable<(string Status, int Count)> rows) { foreach (var (st, n) in rows) statusCounts[st] = statusCounts.GetValueOrDefault(st) + n; }
             AddCounts((await (isSuper ? contributionRepo.GetQueryable(null) : contributionRepo.GetQueryable(c => campaignIdQuery!.Contains(c.CampaignId)))
@@ -119,7 +128,8 @@ public class ReportService(
                     m.Year, m.Month,
                     contributionRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total),
                     storeRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total),
-                    serviceRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total));
+                    serviceRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total),
+                    ticketRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total));
             }).ToList(), statusCounts);
 
             await cache.SetAsync(cacheKey, result, TimeSpan.FromSeconds(60));
@@ -203,7 +213,8 @@ public class ReportService(
             {
                 var storeCollected = await storeOrderRepo.GetQueryable(o => o.Status == "Successful").SumAsync(o => o.TotalAmount);
                 var serviceCollected = await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful").SumAsync(r => r.Amount);
-                totalCollected += storeCollected + serviceCollected;
+                var ticketCollected = await eventRsvpRepo.GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0).SumAsync(r => r.AmountPaid ?? 0m);
+                totalCollected += storeCollected + serviceCollected + ticketCollected;
             }
 
             // Events — year-scoped or community-scoped
