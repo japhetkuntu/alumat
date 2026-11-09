@@ -5,7 +5,7 @@ import { FormError } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "@alumni/ui";
+import { Plus, MoreHorizontal, Pencil, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TableSkeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
+import { LeaderStack, LeadershipDialog, useLeadership } from "@/components/institution/leadership";
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
   getBatches, createBatch, createBatchRange, updateBatch, deleteBatch, submitBatchPayoutSetup,
@@ -250,10 +251,12 @@ export default function BatchesPage() {
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Batch | null>(null);
   const [payoutTarget, setPayoutTarget] = useState<Batch | null>(null);
+  const [leadershipTarget, setLeadershipTarget] = useState<Batch | null>(null);
   const qc = useQueryClient();
 
   const canSetUpPayout = (b: Batch) => isSuperAdmin || (user?.role === "ScopedAdmin" && user.yearGroups?.includes(b.year));
 
+  const leadership = useLeadership("Batch", isSuperAdmin);
   const { data: batches = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["batches"],
     queryFn: getBatches,
@@ -360,17 +363,18 @@ export default function BatchesPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Year</TableHead>
                 <TableHead>Status</TableHead>
+                {isSuperAdmin && <TableHead>Leaders</TableHead>}
                 <TableHead>Payout</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isError ? (
-                <TableRow><TableCell colSpan={5}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
               ) : isLoading ? (
-                <TableSkeleton rows={4} cols={5} />
+                <TableSkeleton rows={4} cols={isSuperAdmin ? 6 : 5} />
               ) : batches.length === 0 ? (
-                <TableRow><TableCell colSpan={5}><EmptyState className="py-8" title={`${cohortLabelPlural} group your members by year`} description="Add the graduating years your institution uses so members pick their own when they register. Until you add some, members see the platform's default year range." /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}><EmptyState className="py-8" title={`${cohortLabelPlural} group your members by year`} description="Add the graduating years your institution uses so members pick their own when they register. Until you add some, members see the platform's default year range." /></TableCell></TableRow>
               ) : batches.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.name}</TableCell>
@@ -378,35 +382,39 @@ export default function BatchesPage() {
                   <TableCell>
                     <Badge variant={b.isActive ? "success" : "neutral"}>{b.isActive ? "Active" : "Inactive"}</Badge>
                   </TableCell>
+                  {isSuperAdmin && (
+                    <TableCell><LeaderStack posts={leadership.forScope(b.id)} onClick={() => setLeadershipTarget(b)} /></TableCell>
+                  )}
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={payoutStatusVariant[b.payoutStatus]}>
-                        {b.payoutStatus === "None" ? "Institution account" : b.payoutStatus}
-                      </Badge>
-                      {canSetUpPayout(b) && (
-                        <Button size="sm" variant="outline" onClick={() => setPayoutTarget(b)}>
-                          {b.payoutStatus === "None" ? "Set up" : "Edit"}
-                        </Button>
-                      )}
-                    </div>
+                    <Badge variant={payoutStatusVariant[b.payoutStatus]}>
+                      {b.payoutStatus === "None" ? "Institution account" : b.payoutStatus}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    {isSuperAdmin && (
-                      <div className="flex items-center gap-2 justify-end">
-                        <Button size="sm" variant="outline" onClick={() => setEditingBatch(b)}>Edit</Button>
-                        <Button size="sm" variant="secondary" onClick={() => toggleActive(b)} isLoading={updateMut.isPending}>
-                          {b.isActive ? "Deactivate" : "Activate"}
+                    <div className="flex items-center justify-end gap-2">
+                      {isSuperAdmin ? (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => setEditingBatch(b)}>Edit</Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="outline" aria-label={`More actions for ${b.name}`} className="px-3"><MoreHorizontal size={15} /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="min-w-[200px]">
+                              <DropdownMenuItem onSelect={() => setEditingBatch(b)}><Pencil size={14} />Edit {cohortLabel.toLowerCase()}</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setLeadershipTarget(b)}>Appoint or manage leaders</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setPayoutTarget(b)}>{b.payoutStatus === "None" ? "Set up payouts" : "Change payouts"}</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => toggleActive(b)}>{b.isActive ? "Deactivate" : "Activate"}</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem destructive onSelect={() => setDeleteTarget(b)}>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </>
+                      ) : canSetUpPayout(b) ? (
+                        <Button size="sm" variant="outline" onClick={() => setPayoutTarget(b)}>
+                          {b.payoutStatus === "None" ? "Set up payouts" : "Change payouts"}
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setDeleteTarget(b)}
-                          isLoading={deleteMut.isPending}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    )}
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -414,6 +422,10 @@ export default function BatchesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {leadershipTarget && (
+        <LeadershipDialog scopeType="Batch" scopeId={leadershipTarget.id} scopeName={leadershipTarget.name} noun={cohortLabel.toLowerCase()} onClose={() => setLeadershipTarget(null)} />
+      )}
 
       <ConfirmModal
         open={!!deleteTarget}

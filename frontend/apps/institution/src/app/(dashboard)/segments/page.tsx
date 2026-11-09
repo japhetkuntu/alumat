@@ -1,5 +1,6 @@
 "use client";
 
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -42,12 +43,12 @@ function toggle(list: string[], value: string) {
 }
 
 /** One sentence describing a rule, so a list of audiences can be read at a glance. */
-function describe(c: SegmentCriteria, groupNames: Record<string, string>): string {
+function describe(c: SegmentCriteria, groupNames: Record<string, string>, showYears = true): string {
   const parts: string[] = [];
   parts.push(c.status ? `${c.status} members` : "All members");
   if (c.groupKinds.length) parts.push(`in any ${c.groupKinds.join(" or ")}`);
   if (c.groupIds.length) parts.push(`in ${c.groupIds.map((id) => groupNames[id] ?? "a removed group").join(", ")}`);
-  if (c.graduationYearFrom || c.graduationYearTo) parts.push(`graduated ${c.graduationYearFrom ?? "…"} to ${c.graduationYearTo ?? "…"}`);
+  if (showYears && (c.graduationYearFrom || c.graduationYearTo)) parts.push(`graduated ${c.graduationYearFrom ?? "…"} to ${c.graduationYearTo ?? "…"}`);
   if (c.duesStatus) parts.push(`dues ${c.duesStatus.toLowerCase()} this year`);
   if (c.answerContains) parts.push(`answered “${c.answerContains}”`);
   if (c.dormantOnly) parts.push("not signed in for 60 days");
@@ -60,6 +61,7 @@ function Editor({ initial, groups, onDone }: {
   groups: { id: string; name: string; kind?: string | null }[];
   onDone: () => void;
 }) {
+  const isCommunity = useInstitutionNavTheme().data?.organizationType === "Community";
   const qc = useQueryClient();
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -128,6 +130,8 @@ function Editor({ initial, groups, onDone }: {
         )}
 
         <div className="grid gap-3 sm:grid-cols-4">
+          {!isCommunity && (
+            <>
           <div className="space-y-1.5">
             <Label htmlFor="seg-from">Graduated from</Label>
             <Input id="seg-from" type="number" value={c.graduationYearFrom ?? ""} onChange={(e) => set({ graduationYearFrom: e.target.value ? Number(e.target.value) : null })} placeholder="e.g. 2010" />
@@ -136,6 +140,8 @@ function Editor({ initial, groups, onDone }: {
             <Label htmlFor="seg-to">Graduated to</Label>
             <Input id="seg-to" type="number" value={c.graduationYearTo ?? ""} onChange={(e) => set({ graduationYearTo: e.target.value ? Number(e.target.value) : null })} placeholder="e.g. 2020" />
           </div>
+            </>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="seg-joined">Joined in the last (days)</Label>
             <Input id="seg-joined" type="number" min={1} value={c.joinedWithinDays ?? ""} onChange={(e) => set({ joinedWithinDays: e.target.value ? Number(e.target.value) : null })} placeholder="e.g. 30" />
@@ -183,6 +189,7 @@ function Editor({ initial, groups, onDone }: {
 }
 
 export default function SegmentsPage() {
+  const isCommunity = useInstitutionNavTheme().data?.organizationType === "Community";
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
   const qc = useQueryClient();
@@ -237,7 +244,7 @@ export default function SegmentsPage() {
             <li key={s.id} className="flex flex-wrap items-start justify-between gap-3 border border-border bg-card p-4">
               <div className="min-w-0">
                 <p className="text-[15px] font-semibold">{s.name}</p>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">{describe(s.criteria, groupNames)}</p>
+                <p className="mt-0.5 text-[13px] text-muted-foreground">{describe(s.criteria, groupNames, !isCommunity)}</p>
                 {s.description && <p className="mt-1 text-[12.5px] text-muted-foreground">{s.description}</p>}
               </div>
               <div className="flex shrink-0 gap-2">

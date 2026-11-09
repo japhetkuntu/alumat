@@ -2551,3 +2551,97 @@ export async function getWebsiteContent() {
   const res = await institutionClient.get<ApiResponse<import("@alumni/site").RawSiteData>>("/website/content");
   return res.data.data!;
 }
+
+// ── Leadership roles and posts ───────────────────────────────────────────────
+
+export type LeadershipScopeType = "Institution" | "Batch" | "Community";
+
+/** One thing a role can be allowed to do. The list comes from the server, so the screen never hardcodes it. */
+export interface LeadershipPrivilege {
+  key: string;
+  label: string;
+  description: string;
+}
+
+export interface LeadershipRole {
+  id: string;
+  name: string;
+  privileges: string[];
+  holderCount: number;
+}
+
+export interface LeadershipPost {
+  id: string;
+  memberId: string;
+  memberName: string;
+  profilePictureUrl?: string | null;
+  graduationYear: number;
+  roleId: string;
+  /** The role's name. */
+  title: string;
+  privileges: string[];
+  scopeType: LeadershipScopeType;
+  scopeId: string;
+  scopeName: string;
+  createdAt: string;
+}
+
+export async function getLeadershipPrivileges() {
+  const res = await institutionClient.get<ApiResponse<LeadershipPrivilege[]>>("/leadership/privileges");
+  return res.data.data ?? [];
+}
+
+export async function getLeadershipRoles() {
+  const res = await institutionClient.get<ApiResponse<LeadershipRole[]>>("/leadership/roles");
+  return res.data.data ?? [];
+}
+
+export async function createLeadershipRole(body: { name: string; privileges: string[] }) {
+  const res = await institutionClient.post<ApiResponse<LeadershipRole>>("/leadership/roles", body);
+  return res.data.data!;
+}
+
+export async function updateLeadershipRole(id: string, body: { name: string; privileges: string[] }) {
+  const res = await institutionClient.put<ApiResponse<LeadershipRole>>(`/leadership/roles/${id}`, body);
+  return res.data.data!;
+}
+
+export async function deleteLeadershipRole(id: string): Promise<void> {
+  await institutionClient.delete(`/leadership/roles/${id}`);
+}
+
+export async function getLeadership(params: { scopeType?: LeadershipScopeType; scopeId?: string; memberId?: string } = {}) {
+  const res = await institutionClient.get<ApiResponse<LeadershipPost[]>>("/leadership", { params });
+  return res.data.data ?? [];
+}
+
+export interface LeadershipSettings {
+  groupMessagesPerDay: number;
+  maxGroupMessagesPerDay: number;
+}
+
+/** How many messages one leader may send to the same group in a day. */
+export async function getLeadershipSettings() {
+  const res = await institutionClient.get<ApiResponse<LeadershipSettings>>("/leadership/settings");
+  return res.data.data!;
+}
+
+export async function updateLeadershipSettings(body: { groupMessagesPerDay: number }) {
+  const res = await institutionClient.put<ApiResponse<LeadershipSettings>>("/leadership/settings", body);
+  return res.data.data!;
+}
+
+export async function appointLeader(body: { memberId: string; roleId: string; scopeType: LeadershipScopeType; scopeId?: string }) {
+  const res = await institutionClient.post<ApiResponse<LeadershipPost>>("/leadership", body);
+  return res.data.data!;
+}
+
+/** Gives a leader a different role in the same place, keeping their appointment. */
+export async function changeLeaderRole(id: string, roleId: string) {
+  const res = await institutionClient.put<ApiResponse<LeadershipPost>>(`/leadership/${id}/role`, { roleId });
+  return res.data.data!;
+}
+
+export async function removeLeader(id: string): Promise<void> {
+  await institutionClient.delete(`/leadership/${id}`);
+}

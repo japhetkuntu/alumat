@@ -1,5 +1,6 @@
 "use client";
 
+import { useCohortPhrase, useInstitutionNavTheme } from "@/components/institution/institution-layout";
 import { ReadMore } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
@@ -29,6 +30,9 @@ import { ZoomableImage } from "@alumni/ui";
 import type { Spotlight, Member } from "@/types";
 
 export default function AdminSpotlightsPage() {
+  const cohortPhrase = useCohortPhrase();
+  const isCommunity = useInstitutionNavTheme().data?.organizationType === "Community";
+  const cohortText = (year?: number | null) => (isCommunity ? "" : ` · ${year ? cohortPhrase.of(year) : "N/A"}`);
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
 
@@ -235,7 +239,7 @@ export default function AdminSpotlightsPage() {
                       <div>
                         <h3 className="font-black text-base leading-tight">{s.title}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {s.memberName ?? "Unknown"} &middot; Cohort {s.memberGraduationYear ?? "N/A"} &middot; {formatDate(s.createdAt)}
+                          {s.memberName ?? "Unknown"}{cohortText(s.memberGraduationYear)} &middot; {formatDate(s.createdAt)}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -461,7 +465,7 @@ export default function AdminSpotlightsPage() {
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold truncate">{m.firstName} {m.lastName}</p>
-                          <p className="text-xs text-muted-foreground truncate">{m.email} · Cohort {m.graduationYear}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m.email}{cohortText(m.graduationYear)}</p>
                         </div>
                       </button>
                     ))
@@ -479,7 +483,7 @@ export default function AdminSpotlightsPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold">{selectedMember.firstName} {selectedMember.lastName}</p>
-                  <p className="text-xs text-muted-foreground">{selectedMember.email} · Cohort {selectedMember.graduationYear}</p>
+                  <p className="text-xs text-muted-foreground">{selectedMember.email}{cohortText(selectedMember.graduationYear)}</p>
                 </div>
                 <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={() => setSelectedMember(null)}>Change</Button>
               </div>

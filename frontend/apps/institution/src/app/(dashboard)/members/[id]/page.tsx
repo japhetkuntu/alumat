@@ -15,7 +15,8 @@ import { Textarea } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
 import { useFeatures } from "@/hooks/use-institution-features";
-import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile, updateMemberCustomFields, updateMemberYearGroup, getBatches, type RegistrationField } from "@/lib/institution-api";
+import { AppointWhere, LeadershipDialog, type AppointTarget } from "@/components/institution/leadership";
+import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile, updateMemberCustomFields, updateMemberYearGroup, getBatches, getLeadership, type RegistrationField } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -180,6 +181,13 @@ export default function MemberDetailPage() {
   const [yearDialog, setYearDialog] = useState(false);
   const yearMode = navTheme?.graduationYearMode ?? (isCommunity ? "Off" : "Required");
   const { user: staff } = useAuth();
+  const { data: posts = [] } = useQuery({
+    queryKey: ["leadership", "member", id],
+    queryFn: () => getLeadership({ memberId: id }),
+    enabled: staff?.role === "SuperAdmin",
+  });
+  const [appointing, setAppointing] = useState(false);
+  const [appointTarget, setAppointTarget] = useState<(AppointTarget & { noun: string }) | null>(null);
   const canChangeYear = yearMode !== "Off" && (staff?.role === "SuperAdmin" || (staff?.role === "ScopedAdmin" && (staff.yearGroups?.length ?? 0) > 0));
   const cohort = useCohortLabels();
 
@@ -277,6 +285,21 @@ export default function MemberDetailPage() {
                   : <span className="flex items-center gap-1 text-xs text-muted-foreground"><MailX size={12} />Unverified</span>}
               </div>
               <p className="text-sm text-muted-foreground mt-1">{member.email}</p>
+              {posts.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {posts.map((p) => (
+                    <span key={p.id} className="rounded-full bg-secondary px-2.5 py-1 text-[12px] font-medium">
+                      {p.title}{p.scopeType !== "Institution" && <span className="font-normal text-muted-foreground"> · {p.scopeName}</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {staff?.role === "SuperAdmin" && member.status === "Active" && (
+                <button type="button" onClick={() => setAppointing(true)}
+                  className="mt-2 inline-flex min-h-8 items-center gap-1 text-[12.5px] font-medium text-primary underline-offset-2 hover:underline">
+                  {posts.length > 0 ? "+ Give another leadership role" : "+ Appoint as a leader"}
+                </button>
+              )}
               {member.memberNumber && (
                 <p className="text-sm font-mono text-primary mt-1">{member.memberNumber}</p>
               )}
@@ -427,6 +450,12 @@ export default function MemberDetailPage() {
       </div>
 
       {/* Modals */}
+      <AppointWhere open={appointing} onClose={() => setAppointing(false)} description={`Choose where ${member.firstName} will lead. You pick their role next.`}
+        onChoose={(t) => { setAppointing(false); setAppointTarget(t); }} />
+      {appointTarget && (
+        <LeadershipDialog key={`${appointTarget.scopeType}-${appointTarget.scopeId}`} scopeType={appointTarget.scopeType} scopeId={appointTarget.scopeId} scopeName={appointTarget.scopeName}
+          noun={appointTarget.noun} startAdding presetMember={{ id: member.id, name: fullName, photo: member.profilePictureUrl }} onClose={() => setAppointTarget(null)} />
+      )}
       <ConfirmModal
         open={modal?.type === "approve"}
         title="Approve Member"

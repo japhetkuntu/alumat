@@ -1,5 +1,6 @@
 "use client";
 
+import { useCohortPhrase, useInstitutionNavTheme } from "@/components/institution/institution-layout";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Button } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -92,6 +93,8 @@ function PayoutPanel() {
 }
 
 export default function AdminDashboardPage() {
+  const cohortPhrase = useCohortPhrase();
+  const isCommunity = useInstitutionNavTheme().data?.organizationType === "Community";
   const router = useRouter();
   const { user, isScopedAdmin } = useAuth();
   // A switched-off feature's API answers 403, so its data is never requested and its
@@ -326,7 +329,7 @@ export default function AdminDashboardPage() {
                     <b className="text-[13px]">{m.firstName} {m.lastName}</b>
                     <br />
                     <small className="text-muted-foreground text-[12px]">
-                      {m.graduationYear ? `Cohort ${m.graduationYear}` : "Cohort unknown"} &middot; {m.isEmailVerified ? "email verified" : "email unverified"}
+                      {!isCommunity && <>{m.graduationYear ? cohortPhrase.of(m.graduationYear) : `${cohortPhrase.word} unknown`} &middot; </>}{m.isEmailVerified ? "email verified" : "email unverified"}
                     </small>
                   </div>
                   <Badge variant="warning">Pending</Badge>

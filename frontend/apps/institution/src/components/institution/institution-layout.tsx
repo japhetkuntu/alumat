@@ -26,6 +26,7 @@ import {
   X,
   Layers,
   Users2,
+  Award,
   Radio,
   Sitemap,
   ShoppingBag,
@@ -109,6 +110,7 @@ const baseNavItems = [
   { href: "/members", label: "Members", icon: Users },
   { href: "/batches", label: "Batches", icon: Layers },
   { href: "/communities", label: "Groups", icon: Users2 },
+  { href: "/leadership", label: "Leadership", icon: Award },
   { href: "/segments", label: "Saved audiences", icon: Filter },
   { label: "Community", isHeader: true },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
@@ -202,7 +204,7 @@ function useNavItems() {
       // place). Mentorship and Albums are partially available to a
       // ScopedAdmin too (scoped to their own batch/community) — see
       // MentorshipController/AlbumsController.
-      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content" || item.href === "/engagement") {
+      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content" || item.href === "/engagement" || item.href === "/leadership") {
         if (user?.role !== "SuperAdmin") return false;
       }
       if (item.href === "/mentorship" || item.href === "/albums") {

@@ -32,6 +32,7 @@ import { handleApiError } from "@/lib/api-client";
 import { LinkOrUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { MemberShareButton } from "@/components/institution/member-share-button";
+import { LeaderStack, LeadershipDialog, useLeadership } from "@/components/institution/leadership";
 
 const SOURCE_LABEL: Record<string, string> = { whatsapp: "Chat message", link: "Shared link", qr: "QR code", sms: "SMS", email: "Email" };
 
@@ -475,6 +476,9 @@ export default function CommunitiesPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [viewingMembers, setViewingMembers] = useState<CommunityListItem | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<CommunityListItem | null>(null);
+  const [leadershipTarget, setLeadershipTarget] = useState<CommunityListItem | null>(null);
+  const isSuperAdmin = user?.role === "SuperAdmin";
+  const leadership = useLeadership("Community", isSuperAdmin);
   const qc = useQueryClient();
 
   const { data: communities = [], isLoading, isError, refetch } = useQuery({
@@ -533,6 +537,9 @@ export default function CommunitiesPage() {
         ) : null}
       </FormSheet>
 
+      {leadershipTarget && (
+        <LeadershipDialog scopeType="Community" scopeId={leadershipTarget.id} scopeName={leadershipTarget.name} noun="group" onClose={() => setLeadershipTarget(null)} />
+      )}
       {viewingMembers && <MembersPanel community={viewingMembers} onClose={() => setViewingMembers(null)} />}
 
       <GrowthCard />
@@ -548,6 +555,7 @@ export default function CommunitiesPage() {
               <TableRow>
                 <TableHead>Group</TableHead>
                 <TableHead>People</TableHead>
+                {isSuperAdmin && <TableHead>Leaders</TableHead>}
                 <TableHead>Status</TableHead>
                 <TableHead>Payouts go to</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -555,11 +563,11 @@ export default function CommunitiesPage() {
             </TableHeader>
             <TableBody>
               {isError ? (
-                <TableRow><TableCell colSpan={5}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
               ) : isLoading ? (
-                <TableSkeleton rows={4} cols={5} />
+                <TableSkeleton rows={4} cols={isSuperAdmin ? 6 : 5} />
               ) : communities.length === 0 ? (
-                <TableRow><TableCell colSpan={5}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
               ) : communities.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
@@ -590,6 +598,9 @@ export default function CommunitiesPage() {
                       )}
                     </div>
                   </TableCell>
+                  {isSuperAdmin && (
+                    <TableCell><LeaderStack posts={leadership.forScope(c.id)} onClick={() => setLeadershipTarget(c)} /></TableCell>
+                  )}
                   <TableCell><Badge variant={c.isActive ? "success" : "neutral"}>{c.isActive ? "Active" : "Inactive"}</Badge></TableCell>
                   <TableCell>
                     <PayoutSummary group={c} onEdit={canSetUpPayout(c) ? () => setPayoutTarget(c) : undefined} />

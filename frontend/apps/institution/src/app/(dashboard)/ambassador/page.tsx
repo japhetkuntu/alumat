@@ -34,7 +34,7 @@ export default function AmbassadorPage() {
       <div>
         <h1 className="text-[20px] sm:text-[25px] font-bold m-0">My year groups</h1>
         <p className="text-muted-foreground text-[13px] mt-1.5 max-w-[60ch]">
-          {data ? `You look after ${data.yearGroups.length === 0 ? "no year groups yet" : `the class of ${data.yearGroups.join(", ")}`}. Welcome people, nudge profiles to completion and keep your class connected.` : "Your year groups at a glance."}
+          {data ? `You look after ${data.yearGroups.length === 0 ? "no year groups yet" : `${cohortPhrase.of(data.yearGroups.join(", "))}`}. Welcome people, nudge profiles to completion and keep your year group connected.` : "Your year groups at a glance."}
         </p>
       </div>
 
@@ -103,7 +103,7 @@ export default function AmbassadorPage() {
             <ul className="divide-y divide-border">
               {data?.recentlyJoined.map((m, i) => (
                 <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-4 py-2.5 text-[14px]">
-                  <span><span className="font-semibold">{m.name}</span> <span className="text-muted-foreground">class of {m.year}</span></span>
+                  <span><span className="font-semibold">{m.name}</span> <span className="text-muted-foreground">{cohortPhrase.of(m.year)}</span></span>
                   <span className="text-[13px] text-muted-foreground">
                     Joined {new Date(m.joinedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}{m.profileIncomplete ? " · profile not filled in" : ""}
                   </span>

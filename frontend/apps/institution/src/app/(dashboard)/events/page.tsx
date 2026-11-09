@@ -112,7 +112,7 @@ const EVENT_STARTERS: { key: string; label: string; title: string; venue?: strin
   { key: "meeting", label: "Chapter meeting", title: "Monthly chapter meeting",
     description: "<p>Our regular meeting: updates from the leaders, what is coming up, and time to hear from members.</p><p><strong>Agenda:</strong> welcome, updates, open floor, close. It usually takes about an hour.</p>" },
   { key: "career", label: "Career evening", title: "Career evening: meet members in the field",
-    description: "<p>Members share how they got where they are, then there is time to ask questions and meet people one on one. Students and recent graduates are especially welcome.</p><p>Bring a short introduction about yourself and what you are looking for.</p>" },
+    description: "<p>Members share how they got where they are, then there is time to ask questions and meet people one on one. Newer members are especially welcome.</p><p>Bring a short introduction about yourself and what you are looking for.</p>" },
   { key: "webinar", label: "Online session", title: "Online session", venue: "Online",
     description: "<p>Join us online. We will share the link with everyone who RSVPs, and you can ask questions in the chat.</p><p><strong>Before you join:</strong> a quiet spot and a good connection help.</p>" },
   { key: "fundraiser", label: "Fundraising event", title: "Fundraising gala",
@@ -150,7 +150,7 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                 <Input type="datetime-local" value={form.endDate} onChange={(e) => f("endDate", e.target.value)} /></div>
             </div>
             <div className="space-y-2"><Label>Venue</Label>
-              <Input placeholder="e.g. Main Campus, Great Hall, or Online" value={form.venue} onChange={(e) => f("venue", e.target.value)} required /></div>
+              <Input placeholder="e.g. Main Hall, Community Centre, or Online" value={form.venue} onChange={(e) => f("venue", e.target.value)} required /></div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Map or meeting link <span className="font-normal text-muted-foreground">(optional)</span></Label>
                 <Input type="url" placeholder="Google Maps, Zoom, Meet, Teams…" value={form.googleLocationUrl} onChange={(e) => f("googleLocationUrl", e.target.value)} />
