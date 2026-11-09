@@ -86,8 +86,43 @@ public class PayoutService(
         var nextOtherRequests = Elsewhere(nextRequestsAll, nextRequests, r => r.InstitutionId, r => r.Amount);
         var nextOtherTickets = Elsewhere(nextTicketsAll, nextTickets, t => t.InstitutionId, t => t.AmountPaid ?? 0m);
 
+        // Which account each of those payments went into, so they can be listed one account at a time.
+        var labels = await LoadLabelsAsync(lastContribsAll.Concat(nextContribsAll), lastRequestsAll.Concat(nextRequestsAll), lastTicketsAll.Concat(nextTicketsAll));
+        static Dictionary<(string Institution, string Kind, string Name), (decimal Amount, int Count)> ByAccount<T>(
+            List<T> all, List<T> kept, Func<T, string> institution, Func<T, decimal> amount, Func<T, (string Kind, string Name)?> label) where T : class
+        {
+            var stayed = kept.ToHashSet();
+            return all.Where(x => !stayed.Contains(x))
+                .Select(x => (Item: x, Label: label(x)))
+                .Where(x => x.Label is not null)
+                .GroupBy(x => (institution(x.Item), x.Label!.Value.Kind, x.Label!.Value.Name))
+                .ToDictionary(g => g.Key, g => (g.Sum(x => amount(x.Item)), g.Count()));
+        }
+        var lastAccounts = new[]
+        {
+            ByAccount(lastContribsAll, lastContribs, c => c.InstitutionId, c => c.Amount, labels.Contribution),
+            ByAccount(lastRequestsAll, lastRequests, r => r.InstitutionId, r => r.Amount, labels.Request),
+            ByAccount(lastTicketsAll, lastTickets, t => t.InstitutionId, t => t.AmountPaid ?? 0m, labels.Ticket),
+        };
+        var nextAccounts = new[]
+        {
+            ByAccount(nextContribsAll, nextContribs, c => c.InstitutionId, c => c.Amount, labels.Contribution),
+            ByAccount(nextRequestsAll, nextRequests, r => r.InstitutionId, r => r.Amount, labels.Request),
+            ByAccount(nextTicketsAll, nextTickets, t => t.InstitutionId, t => t.AmountPaid ?? 0m, labels.Ticket),
+        };
+        static Dictionary<(string Institution, string Kind, string Name), (decimal Amount, int Count)> Merge(IEnumerable<Dictionary<(string, string, string), (decimal, int)>> parts) =>
+            parts.SelectMany(p => p).GroupBy(kv => kv.Key).ToDictionary(g => g.Key, g => (g.Sum(kv => kv.Value.Item1), g.Sum(kv => kv.Value.Item2)));
+        var lastByAccount = Merge(lastAccounts);
+        var nextByAccount = Merge(nextAccounts);
+
         var perInstitution = institutions.Select(inst =>
         {
+            var accounts = lastByAccount.Keys.Concat(nextByAccount.Keys).Where(k => k.Institution == inst.Id).Distinct()
+                .OrderBy(k => k.Kind).ThenBy(k => k.Name)
+                .Select(k => new AccountPayoutForecast(k.Kind, k.Name,
+                    new PayoutWindowDto(windows.LastPayoutDate, lastByAccount.GetValueOrDefault(k).Amount, lastByAccount.GetValueOrDefault(k).Count),
+                    new PayoutWindowDto(windows.NextPayoutDate, nextByAccount.GetValueOrDefault(k).Amount, nextByAccount.GetValueOrDefault(k).Count)))
+                .ToList();
             var lastAmount = lastContribs.Where(c => c.InstitutionId == inst.Id).Sum(c => c.Amount)
                             + lastOrders.Where(o => o.InstitutionId == inst.Id).Sum(o => o.TotalAmount)
                             + lastRequests.Where(r => r.InstitutionId == inst.Id).Sum(r => r.Amount)
@@ -106,7 +141,8 @@ public class PayoutService(
                 new PayoutWindowDto(windows.LastPayoutDate, lastAmount, lastCount),
                 new PayoutWindowDto(windows.NextPayoutDate, nextAmount, nextCount),
                 new PayoutWindowDto(windows.LastPayoutDate, lastOther.Amount, lastOther.Count),
-                new PayoutWindowDto(windows.NextPayoutDate, nextOther.Amount, nextOther.Count));
+                new PayoutWindowDto(windows.NextPayoutDate, nextOther.Amount, nextOther.Count),
+                accounts);
         })
         .OrderByDescending(f => f.NextPayout.Amount + (f.NextOtherAccounts?.Amount ?? 0m))
         .ToList();
@@ -125,6 +161,49 @@ public class PayoutService(
             logger.LogError(e, "GetForecastAsync failed");
             return ApiResponseExtensions.ToServerErrorApiResponse<PlatformPayoutForecastResponse>("Failed to getforecast");
         }}
+
+    /// <summary>Names the group or year group account a payment settles into, from the same rules that decide it is not the institution's.</summary>
+    private sealed class AccountLabeller
+    {
+        public Func<ContributionEntity, (string Kind, string Name)?> Contribution = _ => null;
+        public Func<ServiceRequestEntity, (string Kind, string Name)?> Request = _ => null;
+        public Func<EventRsvpEntity, (string Kind, string Name)?> Ticket = _ => null;
+    }
+
+private async Task<AccountLabeller> LoadLabelsAsync(IEnumerable<ContributionEntity> contribs, IEnumerable<ServiceRequestEntity> requests, IEnumerable<EventRsvpEntity> tickets)
+    {
+        var campaignIds = contribs.Select(c => c.CampaignId).Distinct().ToList();
+        var serviceIds = requests.Select(r => r.ServiceTypeId).Distinct().ToList();
+        var eventIds = tickets.Select(t => t.EventId).Distinct().ToList();
+
+        var campaigns = campaignIds.Count == 0 ? new() : await campaignRepo.GetQueryable(c => campaignIds.Contains(c.Id), ignoreQueryFilters: true)
+            .Select(c => new { c.Id, c.CommunityId, c.InstitutionId, c.YearGroups }).ToDictionaryAsync(c => c.Id);
+        var services = serviceIds.Count == 0 ? new() : await serviceTypeRepo.GetQueryable(x => serviceIds.Contains(x.Id), ignoreQueryFilters: true)
+            .Select(x => new { x.Id, x.InstitutionId, x.CommunityId, x.SettlementTarget }).ToDictionaryAsync(x => x.Id);
+        var events = eventIds.Count == 0 ? new() : await eventRepo.GetQueryable(e => eventIds.Contains(e.Id), ignoreQueryFilters: true)
+            .Select(e => new { e.Id, e.CommunityId }).ToDictionaryAsync(e => e.Id);
+
+        var communities = await communityRepo.GetQueryable(ignoreQueryFilters: true).Select(g => new { g.Id, g.Name }).ToDictionaryAsync(g => g.Id, g => g.Name);
+        var batches = (await batchRepo.GetQueryable(ignoreQueryFilters: true).Select(b => new { b.InstitutionId, b.Year, b.Name }).ToListAsync())
+            .GroupBy(b => (b.InstitutionId, b.Year)).ToDictionary(g => g.Key, g => g.First().Name);
+
+        (string Kind, string Name) Group(string id) => ("Group", communities.GetValueOrDefault(id) ?? "Group");
+        (string Kind, string Name) Year(string institution, int year) => ("YearGroup", batches.GetValueOrDefault((institution, year)) is { Length: > 0 } n ? n : $"Batch of {year}");
+
+        return new AccountLabeller
+        {
+            Contribution = c => !campaigns.TryGetValue(c.CampaignId, out var gc) ? null
+                : gc.CommunityId != null ? Group(gc.CommunityId)
+                : gc.YearGroups is { Count: 1 } yg ? Year(gc.InstitutionId, yg[0]) : null,
+            Request = r =>
+            {
+                if (!services.TryGetValue(r.ServiceTypeId, out var sv)) return null;
+                var a = SettlementAccounts.AudienceOfService(sv.SettlementTarget, sv.CommunityId);
+                return a.CommunityId is { } g ? Group(g) : a.Year is { } y ? Year(sv.InstitutionId, y) : null;
+            },
+            Ticket = t => events.TryGetValue(t.EventId, out var e) && e.CommunityId != null ? Group(e.CommunityId) : null,
+        };
+    }
 
     private async Task<List<ContributionEntity>> FetchContributionsAsync(DateTime start, DateTime end) =>
         (await contributionRepo.GetAllAsync(

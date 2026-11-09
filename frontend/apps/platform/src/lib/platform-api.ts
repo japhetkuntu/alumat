@@ -339,6 +339,15 @@ export interface InstitutionPayoutForecast {
   /** Money in the same windows paid straight into a group's or year group's own account. Not part of the payouts above. */
   lastOtherAccounts?: PayoutWindow | null;
   nextOtherAccounts?: PayoutWindow | null;
+  /** The same money one account at a time: each group or year group that is paid into its own account. */
+  accounts?: AccountPayoutForecast[] | null;
+}
+
+export interface AccountPayoutForecast {
+  kind: "Group" | "YearGroup";
+  name: string;
+  lastPayout: PayoutWindow;
+  nextPayout: PayoutWindow;
 }
 
 export interface PlatformPayoutForecast {

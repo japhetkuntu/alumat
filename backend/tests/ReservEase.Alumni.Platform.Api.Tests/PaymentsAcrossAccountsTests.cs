@@ -153,5 +153,12 @@ public class PaymentsAcrossAccountsTests
         // The year group's fundraiser, the group's fundraiser and the group event's ticket went elsewhere, and are still shown.
         Assert.Equal((250m, 3), (inst.NextOtherAccounts!.Amount, inst.NextOtherAccounts.TransactionCount));
         Assert.Equal(250m, forecast.Totals.NextOtherAccounts!.Amount);
+
+        // And it says which account each part is going into, so a payout to a year group or group is not just a lump.
+        var accounts = inst.Accounts!.ToDictionary(a => a.Name);
+        Assert.Equal(2, accounts.Count);
+        Assert.Equal(("YearGroup", 100m), (accounts["Class of 2020"].Kind, accounts["Class of 2020"].NextPayout.Amount));
+        Assert.Equal(("Group", 150m), (accounts["Accra Chapter"].Kind, accounts["Accra Chapter"].NextPayout.Amount));
+        Assert.Equal(inst.NextOtherAccounts.Amount, accounts.Values.Sum(a => a.NextPayout.Amount));
     }
 }

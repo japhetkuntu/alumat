@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Fragment } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { InfoTip } from "@alumni/ui";
@@ -151,15 +152,15 @@ export default function BillingPage() {
                 icon={Landmark}
                 variant="hero"
                 label="Last payout, all institutions"
-                value={formatCurrencyFit(payoutForecast.totals.lastPayout.amount, "GHS")}
-                sub={`Settled ${formatDate(payoutForecast.totals.lastPayout.date)} · ${payoutForecast.totals.lastPayout.transactionCount} transactions`}
+                value={formatCurrencyFit(payoutForecast.totals.lastPayout.amount + (payoutForecast.totals.lastOtherAccounts?.amount ?? 0), "GHS")}
+                sub={`Settled ${formatDate(payoutForecast.totals.lastPayout.date)} · ${payoutForecast.totals.lastPayout.transactionCount + (payoutForecast.totals.lastOtherAccounts?.transactionCount ?? 0)} transactions${(payoutForecast.totals.lastOtherAccounts?.amount ?? 0) > 0 ? ` · ${formatCurrency(payoutForecast.totals.lastOtherAccounts!.amount, "GHS")} into group and year group accounts` : ""}`}
               />
               <StatCard
                 icon={Clock3}
                 tone="accent"
                 label="Next payout, all institutions"
-                value={formatCurrencyFit(payoutForecast.totals.nextPayout.amount, "GHS")}
-                sub={`Expected ${formatDate(payoutForecast.totals.nextPayout.date)} morning · still accumulating`}
+                value={formatCurrencyFit(payoutForecast.totals.nextPayout.amount + (payoutForecast.totals.nextOtherAccounts?.amount ?? 0), "GHS")}
+                sub={`Expected ${formatDate(payoutForecast.totals.nextPayout.date)} morning · still accumulating${(payoutForecast.totals.nextOtherAccounts?.amount ?? 0) > 0 ? ` · ${formatCurrency(payoutForecast.totals.nextOtherAccounts!.amount, "GHS")} into group and year group accounts` : ""}`}
               />
             </div>
             <Card>
@@ -169,24 +170,31 @@ export default function BillingPage() {
                   <TableRow>
                     <TableHead>Institution</TableHead>
                     <TableHead>Last payout</TableHead>
-                    <TableHead>Next payout</TableHead>
-                    <TableHead>Own accounts, last / next<InfoTip text="Money paid straight into a group's or year group's own account instead of the institution's. It is collected money, but not part of the institution's payout." /></TableHead>
+                    <TableHead>Next payout<InfoTip text="What each account is expected to receive. An institution's own row is its main account; a group or year group paid into its own account is listed under it." /></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payoutForecast.institutions.length === 0 && <TableEmpty title="No institutions yet" colSpan={4} />}
+                  {payoutForecast.institutions.length === 0 && <TableEmpty title="No institutions yet" colSpan={3} />}
                   {payoutForecast.institutions.map((f) => (
-                    <TableRow key={f.institutionId}>
-                      <TableCell className="font-semibold">
-                        {f.institutionName}
-                        {!f.payoutsConfigured && <Badge variant="warning" className="ml-2">Not set up</Badge>}
-                      </TableCell>
-                      <TableCell className="tabular-nums">{formatCurrency(f.lastPayout.amount, "GHS")}</TableCell>
-                      <TableCell className="tabular-nums">{formatCurrency(f.nextPayout.amount, "GHS")}</TableCell>
-                      <TableCell className="tabular-nums text-muted-foreground">
-                        {formatCurrency(f.lastOtherAccounts?.amount ?? 0, "GHS")} / {formatCurrency(f.nextOtherAccounts?.amount ?? 0, "GHS")}
-                      </TableCell>
-                    </TableRow>
+                    <Fragment key={f.institutionId}>
+                      <TableRow>
+                        <TableCell className="font-semibold">
+                          {f.institutionName}
+                          {!f.payoutsConfigured && <Badge variant="warning" className="ml-2">Not set up</Badge>}
+                        </TableCell>
+                        <TableCell className="tabular-nums">{formatCurrency(f.lastPayout.amount, "GHS")}</TableCell>
+                        <TableCell className="tabular-nums">{formatCurrency(f.nextPayout.amount, "GHS")}</TableCell>
+                      </TableRow>
+                      {(f.accounts ?? []).map((a) => (
+                        <TableRow key={`${f.institutionId}-${a.kind}-${a.name}`}>
+                          <TableCell className="pl-8 text-muted-foreground">
+                            {a.name}<span className="ml-2 text-[12px]">{a.kind === "Group" ? "group" : "year group"} · own account</span>
+                          </TableCell>
+                          <TableCell className="tabular-nums text-muted-foreground">{formatCurrency(a.lastPayout.amount, "GHS")}</TableCell>
+                          <TableCell className="tabular-nums text-muted-foreground">{formatCurrency(a.nextPayout.amount, "GHS")}</TableCell>
+                        </TableRow>
+                      ))}
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
