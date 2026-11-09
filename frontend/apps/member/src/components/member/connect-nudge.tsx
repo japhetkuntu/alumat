@@ -14,7 +14,7 @@ const subscribe = (cb: () => void) => { window.addEventListener("storage", cb); 
 /**
  * Two things, never both. When people are waiting to connect with this member, that is said first and plainly (the number is the
  * strongest reason to open the app). Otherwise, for a member who has never asked anyone and never been asked, one short card says
- * that they can message other alumni and how; it can be dismissed for good. Silent for everyone else.
+ * that they can message other members and how; it can be dismissed for good. Silent for everyone else.
  */
 export function ConnectNudge() {
   const { user } = useAuth();
@@ -67,7 +67,7 @@ export function ConnectNudge() {
       <div className="flex items-start gap-3.5 pr-8">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><MessageCircle size={18} /></span>
         <div className="min-w-0">
-          <h2 id="connect-intro" className="text-[16px] font-semibold leading-snug">You can message other alumni</h2>
+          <h2 id="connect-intro" className="text-[16px] font-semibold leading-snug">You can message other members</h2>
           <p className="mt-1 text-[13.5px] leading-relaxed text-muted-foreground">Find someone in the directory and ask for an introduction with a short note. If they accept, you chat privately.</p>
           <Link href="/directory" className="mt-3 inline-block"><Button variant="outline" size="sm" className="rounded-full px-5 font-semibold text-foreground">Find someone</Button></Link>
         </div>

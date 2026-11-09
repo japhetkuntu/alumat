@@ -1356,3 +1356,238 @@ export async function getBlockedMembers(): Promise<IntroPerson[]> {
   const res = await memberClient.get("/introductions/blocks");
   return res.data.data!;
 }
+
+// ── Leadership ──────────────────────────────────────────────────────────────
+
+export interface LeadershipPost {
+  id: string;
+  memberId: string;
+  memberName: string;
+  profilePictureUrl?: string | null;
+  jobTitle?: string | null;
+  title: string;
+  scopeType: "Institution" | "Batch" | "Community";
+  scopeId: string;
+  scopeName: string;
+}
+
+/** Who leads one year group or community. */
+export async function getLeaders(scopeType: LeadershipPost["scopeType"], scopeId: string): Promise<LeadershipPost[]> {
+  const res = await memberClient.get("/leadership", { params: { scopeType, scopeId } });
+  return res.data.data ?? [];
+}
+
+/** The titles held by the given members, for labelling the people in a list. */
+export async function getLeadershipOf(memberIds: string[]): Promise<LeadershipPost[]> {
+  if (memberIds.length === 0) return [];
+  const res = await memberClient.get("/leadership", { params: { memberIds: memberIds.join(",") } });
+  return res.data.data ?? [];
+}
+
+export interface MyRole {
+  postId: string;
+  roleName: string;
+  scopeType: "Institution" | "Batch" | "Community";
+  scopeId: string;
+  scopeName: string;
+  privileges: { key: string; label: string; description: string }[];
+}
+
+/** The roles the member holds, with what each one lets them do. */
+export async function getMyRoles(): Promise<MyRole[]> {
+  const res = await memberClient.get("/leadership/mine");
+  return res.data.data ?? [];
+}
+
+/** Pictures travel as files, so the leader's forms are sent as forms: text as text, files as files, lists as repeated fields. */
+function toForm(data: object): FormData {
+  const fd = new FormData();
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined || value === null) continue;
+    if (value instanceof File) fd.append(key, value);
+    else if (Array.isArray(value)) value.forEach((v) => (v instanceof File ? fd.append(key, v) : fd.append(key, String(v))));
+    else fd.append(key, String(value));
+  }
+  return fd;
+}
+const FORM = { headers: { "Content-Type": "multipart/form-data" }, timeout: 0 } as const;
+
+/** The pictures and videos a leader can attach. Files are new uploads; the URLs are pictures an edited item already has and is keeping. */
+export interface GroupMediaInput {
+  bannerImage?: File | null;
+  removeBanner?: boolean;
+  images?: File[];
+  existingImageUrls?: string[];
+  youtubeVideoUrls?: string[];
+}
+
+// ── Managing a group as its leader ──────────────────────────────────────────
+
+export interface ManageGroup {
+  scopeType: "Batch" | "Community";
+  scopeId: string;
+  name: string;
+  roleNames: string[];
+  /** Keys: ManageMembers, MessageGroup, ManageEvents, PostNews, PostJobs, ShareResources, ManageFundraisers, ViewGiving, ViewReport. */
+  privileges: string[];
+  /** How many people are waiting for this leader to approve them. */
+  pendingCount: number;
+}
+
+export interface GroupSummary {
+  name: string;
+  totalMembers: number;
+  newLast30Days: number;
+  activeLast30Days: number;
+  profileCompletionPercent: number;
+  pendingRequests: number;
+}
+
+export interface GroupMember {
+  memberId: string;
+  name: string;
+  profilePictureUrl?: string | null;
+  jobTitle?: string | null;
+  status: "Active" | "Pending";
+  joinedAt: string;
+  /** A waiting request can be approved. */
+  canDecide: boolean;
+  /** Only a community's request can be declined by its leader; a year group's registration is declined by administrators. */
+  canDecline: boolean;
+}
+
+const groupPath = (g: Pick<ManageGroup, "scopeType" | "scopeId">) => `/manage/groups/${g.scopeType}/${encodeURIComponent(g.scopeId)}`;
+
+export async function getManageGroups(): Promise<ManageGroup[]> {
+  const res = await memberClient.get("/manage/groups");
+  return res.data.data ?? [];
+}
+
+export async function getGroupSummary(g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<GroupSummary> {
+  const res = await memberClient.get(`${groupPath(g)}/summary`);
+  return res.data.data;
+}
+
+export async function getGroupMembers(g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<GroupMember[]> {
+  const res = await memberClient.get(`${groupPath(g)}/members`);
+  return res.data.data ?? [];
+}
+
+export async function decideJoinRequest(g: Pick<ManageGroup, "scopeType" | "scopeId">, memberId: string, approve: boolean): Promise<void> {
+  await memberClient.post(`${groupPath(g)}/members/${memberId}/decision`, { approve });
+}
+
+export async function messageGroup(g: Pick<ManageGroup, "scopeType" | "scopeId">, text: string, channels: ("Email" | "Sms")[] = []): Promise<{ recipients: number }> {
+  const res = await memberClient.post(`${groupPath(g)}/message`, { text, channels });
+  return res.data.data;
+}
+
+/** Which extra ways of reaching the group the platform has switched on for this community. The notification and phone alert always go. */
+export async function getMessageChannels(g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<{ email: boolean; sms: boolean; recipients: number; leftToday: number; perDay: number }> {
+  const res = await memberClient.get(`${groupPath(g)}/channels`);
+  return res.data.data;
+}
+
+/** One message already sent to a group, by any leader who may message it. */
+export interface GroupMessageHistoryItem {
+  id: string;
+  senderName: string;
+  text: string;
+  recipients: number;
+  sentAt: string;
+  isMine: boolean;
+}
+
+/** What has been sent to the group, newest first, so a leader doesn't repeat what was just said. */
+export async function getMessageHistory(g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<GroupMessageHistoryItem[]> {
+  const res = await memberClient.get(`${groupPath(g)}/messages`);
+  return res.data.data ?? [];
+}
+
+/** A leader gives up one of their own roles. They stay a member; the administrators can see it and appoint someone else. */
+export async function stepDownFromRole(postId: string): Promise<void> {
+  await memberClient.post(`/leadership/mine/${encodeURIComponent(postId)}/step-down`);
+}
+
+export interface GroupEvent {
+  bannerImageUrl?: string | null;
+  imageUrls?: string[] | null;
+  youtubeVideoUrls?: string[] | null;
+  googleLocationUrl?: string | null;
+  id: string;
+  title: string;
+  description?: string | null;
+  venue: string;
+  startDate: string;
+  endDate?: string | null;
+  capacity?: number | null;
+  rsvpCount: number;
+  status: string;
+  canEdit: boolean;
+}
+
+export interface SaveGroupEvent extends GroupMediaInput {
+  googleLocationUrl?: string;
+  title: string;
+  description?: string;
+  venue: string;
+  startDate: string;
+  endDate?: string | null;
+  capacity?: number | null;
+}
+
+export async function getGroupEvents(g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<GroupEvent[]> {
+  const res = await memberClient.get(`${groupPath(g)}/events`);
+  return res.data.data ?? [];
+}
+
+export async function createGroupEvent(g: Pick<ManageGroup, "scopeType" | "scopeId">, body: SaveGroupEvent): Promise<GroupEvent> {
+  const res = await memberClient.post(`${groupPath(g)}/events`, toForm(body), FORM);
+  return res.data.data;
+}
+
+export async function updateGroupEvent(g: Pick<ManageGroup, "scopeType" | "scopeId">, id: string, body: SaveGroupEvent): Promise<GroupEvent> {
+  const res = await memberClient.put(`${groupPath(g)}/events/${id}`, toForm(body), FORM);
+  return res.data.data;
+}
+
+export async function cancelGroupEvent(g: Pick<ManageGroup, "scopeType" | "scopeId">, id: string): Promise<void> {
+  await memberClient.post(`${groupPath(g)}/events/${id}/cancel`);
+}
+
+export interface GroupNews { id: string; title: string; content: string; category: string; publishedAt?: string | null; canEdit: boolean; imageUrls?: string[] | null; youtubeVideoUrls?: string[] | null }
+export interface SaveGroupNews extends GroupMediaInput { title: string; content: string; category?: string }
+export interface GroupJob { id: string; title: string; company: string; location: string; type: string; description?: string | null; applyUrl?: string | null; deadline?: string | null; status: string; canEdit: boolean; bannerImageUrl?: string | null }
+export interface SaveGroupJob extends GroupMediaInput { title: string; company: string; location: string; type: string; description?: string; applyUrl?: string; deadline?: string | null }
+export interface GroupResource { id: string; title: string; description?: string | null; category: string; externalUrl: string; canEdit: boolean; bannerImageUrl?: string | null }
+export interface SaveGroupResource extends GroupMediaInput { title: string; description?: string; category?: string; externalUrl: string }
+
+type Scope = Pick<ManageGroup, "scopeType" | "scopeId">;
+
+export const getGroupNews = async (g: Scope): Promise<GroupNews[]> => (await memberClient.get(`${groupPath(g)}/news`)).data.data ?? [];
+export const createGroupNews = async (g: Scope, b: SaveGroupNews): Promise<GroupNews> => (await memberClient.post(`${groupPath(g)}/news`, toForm(b), FORM)).data.data;
+export const updateGroupNews = async (g: Scope, id: string, b: SaveGroupNews): Promise<GroupNews> => (await memberClient.put(`${groupPath(g)}/news/${id}`, toForm(b), FORM)).data.data;
+export const deleteGroupNews = async (g: Scope, id: string): Promise<void> => { await memberClient.delete(`${groupPath(g)}/news/${id}`); };
+
+export const getGroupJobs = async (g: Scope): Promise<GroupJob[]> => (await memberClient.get(`${groupPath(g)}/jobs`)).data.data ?? [];
+export const createGroupJob = async (g: Scope, b: SaveGroupJob): Promise<GroupJob> => (await memberClient.post(`${groupPath(g)}/jobs`, toForm(b), FORM)).data.data;
+export const updateGroupJob = async (g: Scope, id: string, b: SaveGroupJob): Promise<GroupJob> => (await memberClient.put(`${groupPath(g)}/jobs/${id}`, toForm(b), FORM)).data.data;
+export const closeGroupJob = async (g: Scope, id: string): Promise<void> => { await memberClient.post(`${groupPath(g)}/jobs/${id}/close`); };
+
+export const getGroupResources = async (g: Scope): Promise<GroupResource[]> => (await memberClient.get(`${groupPath(g)}/resources`)).data.data ?? [];
+export const createGroupResource = async (g: Scope, b: SaveGroupResource): Promise<GroupResource> => (await memberClient.post(`${groupPath(g)}/resources`, toForm(b), FORM)).data.data;
+export const updateGroupResource = async (g: Scope, id: string, b: SaveGroupResource): Promise<GroupResource> => (await memberClient.put(`${groupPath(g)}/resources/${id}`, toForm(b), FORM)).data.data;
+export const deleteGroupResource = async (g: Scope, id: string): Promise<void> => { await memberClient.delete(`${groupPath(g)}/resources/${id}`); };
+
+export interface GroupCampaign {
+  id: string; title: string; description?: string | null; targetAmount: number; amountPerMember: number; deadline: string; status: string;
+  collectedAmount: number; paidCount: number; canEdit: boolean; canSeeGiving: boolean; bannerImageUrl?: string | null; youtubeVideoUrl?: string | null;
+}
+export interface SaveGroupCampaign extends GroupMediaInput { title: string; description?: string; targetAmount: number; amountPerMember: number; deadline: string }
+export interface GroupGift { giverName: string; giverPhotoUrl?: string | null; amount: number; status: string; method: string; givenAt: string }
+
+export const getGroupCampaigns = async (g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<GroupCampaign[]> => (await memberClient.get(`${groupPath(g)}/campaigns`)).data.data ?? [];
+export const createGroupCampaign = async (g: Pick<ManageGroup, "scopeType" | "scopeId">, b: SaveGroupCampaign): Promise<GroupCampaign> => (await memberClient.post(`${groupPath(g)}/campaigns`, toForm(b), FORM)).data.data;
+export const updateGroupCampaign = async (g: Pick<ManageGroup, "scopeType" | "scopeId">, id: string, b: SaveGroupCampaign): Promise<GroupCampaign> => (await memberClient.put(`${groupPath(g)}/campaigns/${id}`, toForm(b), FORM)).data.data;
+export const closeGroupCampaign = async (g: Pick<ManageGroup, "scopeType" | "scopeId">, id: string): Promise<void> => { await memberClient.post(`${groupPath(g)}/campaigns/${id}/close`); };
+export const getGroupGifts = async (g: Pick<ManageGroup, "scopeType" | "scopeId">, id: string): Promise<GroupGift[]> => (await memberClient.get(`${groupPath(g)}/campaigns/${id}/gifts`)).data.data ?? [];

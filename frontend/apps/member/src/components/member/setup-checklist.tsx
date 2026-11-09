@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { useFeatures } from "@/components/member/member-layout";
+import { useFeatures, useNavTheme } from "@/components/member/member-layout";
 import { hasAnyIntroduction, getCommunities, getEvents, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
 
 function subscribeDirectoryVisits(notify: () => void) {
@@ -25,6 +25,7 @@ export function MemberSetupChecklist() {
   // enabled() is false until the feature list has loaded, so nothing is requested for a
   // feature that turns out to be off (its API answers 403).
   const features = useFeatures();
+  const isCommunity = useNavTheme().data?.organizationType === "Community";
   const disabledFeatures = features.disabled;
   const eventsEnabled = features.enabled("Events");
   const contributionsEnabled = features.enabled("Contributions");
@@ -80,9 +81,9 @@ export function MemberSetupChecklist() {
     ...(directoryEnabled
       ? [{
           id: "directory",
-          title: profile.data.graduationYear ? "Find someone from your year" : "Meet your community",
-          description: profile.data?.graduationYear
-            ? `See who else graduated in ${profile.data.graduationYear} and is on AlumUnion.`
+          title: profile.data.graduationYear && !isCommunity ? "Find someone from your year" : "Meet your community",
+          description: profile.data?.graduationYear && !isCommunity
+            ? `See who else is here from ${profile.data.graduationYear}.`
             : "Browse the directory to see who else is already here.",
           done: directoryVisited,
           actionLabel: "Browse the directory",
@@ -92,7 +93,7 @@ export function MemberSetupChecklist() {
             }
             window.dispatchEvent(new Event("member-directory-visited"));
             router.push(
-              profile.data?.graduationYear ? `/directory?year=${profile.data.graduationYear}` : "/directory",
+              profile.data?.graduationYear && !isCommunity ? `/directory?year=${profile.data.graduationYear}` : "/directory",
             );
           },
         }]

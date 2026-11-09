@@ -5,6 +5,7 @@ import { ProfileStrengthCard } from "@/components/member/profile-strength";
 import { BadgeCelebration } from "@/components/member/badge-celebration";
 import { WaitingForAnswer } from "@/components/member/waiting-for-answer";
 import { ConnectNudge } from "@/components/member/connect-nudge";
+import { LeaderHomeCard } from "@/components/member/leader-home-card";
 import { OpenPolls } from "@/components/member/open-polls";
 import { useCohortLabels, useCohortPhrase, useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
 import { isFeatureDisabledError } from "@/lib/feature-errors";
@@ -805,6 +806,7 @@ export default function MemberDashboardPage() {
 
       {/* ── What to do next: right under the member card, before the feed, so it is seen ── */}
       <BadgeCelebration />
+      <LeaderHomeCard />
       <ConnectNudge />
       <OpenPolls />
       <ProfileStrengthCard />

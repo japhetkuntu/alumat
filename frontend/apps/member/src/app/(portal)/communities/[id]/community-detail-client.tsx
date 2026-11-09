@@ -1,5 +1,6 @@
 "use client";
 
+import { MeetYourLeaders } from "@/components/member/leaders";
 import { useState } from "react";
 import { eventPriceLabel } from "@/lib/event-price";
 import { richTextToPlain } from "@alumni/ui";
@@ -352,6 +353,8 @@ export default function CommunityDetailPage() {
           </div>
         </div>
       </div>
+
+      <MeetYourLeaders scopeType="Community" scopeId={id} noun="group" />
 
       {!isApproved ? (
         <div className="card flex flex-col items-center gap-3 px-6 py-10 text-center">

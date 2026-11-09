@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useMemo, useRef, ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useManageGroups } from "@/hooks/use-manage-groups";
 import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { UserMenu, Settings as SettingsIcon, UserCircle as ProfileIcon } from "@alumni/ui";
@@ -32,6 +33,7 @@ import {
   GraduationCap,
   FolderOpen,
   UserCircle,
+  ShieldCheck,
   Menu,
   X,
   Trophy,
@@ -103,6 +105,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
   {
     section: null,
     items: [
+      { href: "/manage", label: "Manage", icon: ShieldCheck },
       { href: "/profile", label: "Profile", icon: UserCircle },
     ],
   },
@@ -287,11 +290,14 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const introBadge = useIntroductionBadge();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
+  const canManage = (useManageGroups().data ?? []).length > 0;
   const visibleGroups = navGroups
     .map((g) => ({
       ...g,
       items: g.items.filter((item) => {
         const featureKey = NAV_FEATURE_KEYS[item.href];
+        // Only people who lead a group have anything to manage.
+        if (item.href === "/manage" && !canManage) return false;
         // The leaderboard ranks year groups; with no graduation years there is nothing to rank.
         if (item.href === "/leaderboard" && (navTheme?.graduationYearMode ?? (navTheme?.organizationType === "Community" ? "Off" : "Required")) === "Off") return false;
         // Every feature the institution has switched on is listed, whether or not it has content yet,
@@ -470,14 +476,16 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   // Shared with the profile page, so a new photo shows in the header straight away.
   const { data: myProfile } = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile, enabled: isMember, staleTime: 5 * 60 * 1000 });
   const disabledForSearch = useDisabledFeatures();
+  const canManageForSearch = (useManageGroups().data ?? []).length > 0;
   // One live connection for introductions (messages, requests, badges), opened once for the whole portal.
   useIntroductionStream(isMember && !disabledForSearch.has("Introductions"));
   const searchPages = useMemo(
     () => navGroups.flatMap((g) => g.items).filter((i) => {
       const key = NAV_FEATURE_KEYS[i.href];
+      if (i.href === "/manage" && !canManageForSearch) return false;
       return !key || !disabledForSearch.has(key);
     }).map((i) => ({ href: i.href, label: i.label })),
-    [disabledForSearch],
+    [disabledForSearch, canManageForSearch],
   );
   const { data: navTheme } = useNavTheme();
   const brandName = navTheme?.displayName || "Member Portal";

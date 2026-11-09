@@ -744,7 +744,7 @@ function RegisterForm() {
                 <p className="font-semibold mb-0.5">{referralPreview.referrerFirstName} invited you{referralPreview.communityName ? <> to join {referralPreview.communityName}</> : null}</p>
                 <p style={{ color: "var(--muted-foreground)" }}>
                   {referralPreview.referrerGraduationYear
-                    ? `${referralPreview.sameBatchActiveMembers} classmate${referralPreview.sameBatchActiveMembers === 1 ? "" : "s"} from ${referralPreview.referrerGraduationYear} `
+                    ? `${referralPreview.sameBatchActiveMembers} member${referralPreview.sameBatchActiveMembers === 1 ? "" : "s"} from ${referralPreview.referrerGraduationYear} `
                     : `${referralPreview.totalActiveMembers} member${referralPreview.totalActiveMembers === 1 ? "" : "s"} `}
                   already here.
                   {referralPreview.openFundraiserTitle && referralPreview.openFundraiserTarget && (

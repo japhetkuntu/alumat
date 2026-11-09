@@ -1,5 +1,6 @@
 "use client";
 
+import { MeetYourLeaders, useLeaderTitles } from "@/components/member/leaders";
 import { IntroduceButton } from "@/components/member/introduce-button";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -13,7 +14,7 @@ import { Button } from "@alumni/ui";
 import { SearchableSelect } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
-import { searchDirectory, getMyProfile, getDirectorySuggestions } from "@/lib/member-api";
+import { searchDirectory, getMyProfile, getDirectorySuggestions, getBatches } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
@@ -90,6 +91,10 @@ export default function MemberDirectoryPage() {
   const seen = new Set<string>();
   const members = (data?.pages ?? []).flatMap((p) => p.results).filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)));
   const total = data?.pages[0]?.totalCount ?? 0;
+  const leaderTitles = useLeaderTitles(members.map((m) => m.id));
+  // A year group has its own leaders; when the list is narrowed to one year, they are introduced above the results.
+  const { data: yearGroups = [] } = useQuery({ queryKey: ["m-batches"], queryFn: getBatches, staleTime: 10 * 60_000, enabled: !isCommunity && !!yearFilter });
+  const yearGroup = yearFilter ? yearGroups.find((b) => String(b.year) === yearFilter) : undefined;
   const hasFilters = !!(typed || search || yearFilter);
 
   function clearFilters() { setTyped(""); setSearch(""); setYearFilter(""); }
@@ -143,6 +148,8 @@ export default function MemberDirectoryPage() {
         )}
       </div>
 
+      {yearGroup && <MeetYourLeaders scopeType="Batch" scopeId={yearGroup.id} noun={cohort.word.toLowerCase()} />}
+
       {/* One tap to the people they most likely know. */}
       {!isCommunity && myYear && (
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Quick filters">
@@ -171,7 +178,7 @@ export default function MemberDirectoryPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {suggestions.data!.map(({ member: m, reasons }) => (
               <div key={m.id} className="flex flex-col gap-1.5">
-                <DirectoryMemberCard member={m} selected={selected?.id === m.id} isCommunity={isCommunity} canConnect={introductionsOn && m.id !== me?.id}
+                <DirectoryMemberCard member={m} titles={leaderTitles.get(m.id)} selected={selected?.id === m.id} isCommunity={isCommunity} canConnect={introductionsOn && m.id !== me?.id}
                   onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
                 <p className="px-1 text-[12.5px] text-muted-foreground">{reasons.slice(0, 2).join(" · ")}</p>
               </div>
@@ -202,7 +209,7 @@ export default function MemberDirectoryPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {members.map(m => (
-              <DirectoryMemberCard key={m.id} member={m} selected={selected?.id === m.id} isCommunity={isCommunity} canConnect={introductionsOn && m.id !== me?.id}
+              <DirectoryMemberCard key={m.id} member={m} titles={leaderTitles.get(m.id)} selected={selected?.id === m.id} isCommunity={isCommunity} canConnect={introductionsOn && m.id !== me?.id}
                 onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
             ))}
           </div>

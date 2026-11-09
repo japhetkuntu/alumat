@@ -6,8 +6,10 @@ import type { Member } from "@/types";
 
 export type DirectoryMember = Pick<Member, "id" | "firstName" | "lastName" | "profilePictureUrl" | "jobTitle" | "company" | "location" | "graduationYear" | "departmentName" | "linkedInUrl">;
 
-export function DirectoryMemberCard({ member: m, selected = false, isCommunity = false, canConnect = false, onSelect }: {
+export function DirectoryMemberCard({ member: m, selected = false, isCommunity = false, canConnect = false, titles = [], onSelect }: {
   member: DirectoryMember; selected?: boolean; isCommunity?: boolean;
+  /** Leadership titles this member holds, shown under their name. */
+  titles?: string[];
   /** Shows a Connect button, so it is plain that a member can be asked for an introduction. It opens the profile, where the request is made. */
   canConnect?: boolean; onSelect: () => void;
 }) {
@@ -21,6 +23,7 @@ export function DirectoryMemberCard({ member: m, selected = false, isCommunity =
           <UserAvatar src={m.profilePictureUrl} name={`${m.firstName} ${m.lastName}`} size="lg" />
           <div className="flex-1 min-w-0">
             <p className="text-[14.5px] font-semibold leading-snug truncate text-foreground">{m.firstName} {m.lastName}</p>
+            {titles.length > 0 && <p className="text-[12px] mt-0.5 truncate font-medium text-primary">{titles.join(" · ")}</p>}
             {m.jobTitle && <p className="text-[12.5px] mt-0.5 truncate text-muted-foreground">{m.jobTitle}{m.company ? ` · ${m.company}` : ""}</p>}
             {m.location && <p className="text-[12px] mt-0.5 truncate text-muted-foreground">{m.location}</p>}
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { YourRoles } from "@/components/member/your-roles";
 import { compressImage } from "@alumni/ui";
 import Link from "next/link";
 import { DeleteAccountLink } from "@/components/member/delete-account";
@@ -455,6 +456,8 @@ export default function MemberProfilePage() {
     <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-6xl mx-auto">
       <PageHeader eyebrow="Account" title="Profile" description="Your profile, visible to the people in your community, and how the portal works for you." />
       <ProfileStrengthBar />
+
+      <div className="mt-6 empty:hidden"><YourRoles /></div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-5 lg:gap-6 mt-6 items-start">
 

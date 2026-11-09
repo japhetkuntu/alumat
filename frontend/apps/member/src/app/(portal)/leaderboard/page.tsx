@@ -58,7 +58,7 @@ export default function LeaderboardPage() {
       {/* ── Header ── */}
       <PageHeader
         eyebrow="Community progress"
-        title="Class leaderboard"
+        title={`${label.singular} leaderboard`}
         description={`See how each ${label.singular.toLowerCase()} ranks against the others through membership, contributions, and events.`}
       />
 

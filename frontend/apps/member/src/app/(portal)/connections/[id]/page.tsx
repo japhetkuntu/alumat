@@ -15,6 +15,7 @@ import {
   INTRO_MESSAGE_MAX, REPORT_REASONS, answerIntroduction, blockMember, endIntroduction, getIntroduction, reportIntroduction, sendIntroMessage,
   resumeIntroduction, unblockMember, withdrawIntroduction, type IntroCondition, type IntroDetail, type IntroMessage, type IntroPerson,
 } from "@/lib/member-api";
+import { useCohortPhrase, useNavTheme } from "@/components/member/member-layout";
 import { IntroduceButton } from "@/components/member/introduce-button";
 import { mergeLatest, mergeNewMessages, prependOlder, pollWhenOffline, useStreamConnected } from "@/lib/introduction-stream";
 import { handleApiError } from "@/lib/api-client";
@@ -118,6 +119,8 @@ function ReportDialog({ id, open, onClose }: { id: string; open: boolean; onClos
 type Shown = IntroMessage & { sending?: boolean };
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
+  const cohortPhrase = useCohortPhrase();
+  const isCommunity = useNavTheme().data?.organizationType === "Community";
   const { id } = use(params);
   const router = useRouter();
   const qc = useQueryClient();
@@ -312,7 +315,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         <UserAvatar src={other.photoUrl} name={other.name} size="lg" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-semibold leading-tight">{other.name}</p>
-          <p className="truncate text-[12.5px] text-muted-foreground">{[other.headline, other.graduationYear ? `Class of ${other.graduationYear}` : null].filter(Boolean).join(" · ") || "Member"}</p>
+          <p className="truncate text-[12.5px] text-muted-foreground">{[other.headline, other.graduationYear && !isCommunity ? cohortPhrase.of(other.graduationYear) : null].filter(Boolean).join(" · ") || "Member"}</p>
         </div>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
