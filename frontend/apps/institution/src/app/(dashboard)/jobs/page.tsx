@@ -1,6 +1,7 @@
 "use client";
 
 import { ReadMore } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { useSearchParams } from "next/navigation";
 import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
@@ -146,6 +147,10 @@ export default function AdminJobsPage() {
   const [search, setSearch] = useState("");
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
+
+  // How many jobs each status and type chip holds, so a chip reads as something worth opening.
+  const statusCounts = useFilterCounts(["admin-jobs", "status"], ["", "Pending", "Active", "Draft", "Closed"], async (s) => (await getJobs(1, 1, undefined, s || undefined)).totalCount);
+  const typeCounts = useFilterCounts(["admin-jobs", "type"], ["", "Full-time", "Part-time", "Contract", "Internship"], async (t) => (await getJobs(1, 1, undefined, undefined, t || undefined)).totalCount);
   const [typeFilter, setTypeFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [postedAfter, setPostedAfter] = useState("");
@@ -299,7 +304,7 @@ export default function AdminJobsPage() {
                 statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
               }`}
             >
-              {s === "" ? "All" : s}
+              {withCount(s === "" ? "All" : s, statusCounts[s])}
             </button>
           ))}
           <div className="w-px h-6 bg-border mx-1" />
@@ -313,7 +318,7 @@ export default function AdminJobsPage() {
                 typeFilter === t ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
               }`}
             >
-              {t === "" ? "All Types" : t}
+              {withCount(t === "" ? "All Types" : t, typeCounts[t])}
             </button>
           ))}
         </ChipRow>

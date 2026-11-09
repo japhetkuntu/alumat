@@ -1,6 +1,7 @@
 "use client";
 
 import { ReadMore } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
@@ -216,6 +217,8 @@ function ListingForm({ title, init, onSave, onCancel, saving }: {
 export default function AdminBusinessDirectoryPage() {
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
+
+  const statusCounts = useFilterCounts(["admin-business-directory"], ["", "Pending", "Approved", "Rejected", "Blacklisted"], async (s) => (await getBusinessListings(s || undefined, 1, 1)).totalCount);
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<BusinessListing | null>(null);
@@ -332,7 +335,7 @@ export default function AdminBusinessDirectoryPage() {
               statusFilter === s ? "bg-primary/10 text-primary border-primary/30" : "bg-white text-foreground border-border hover:bg-muted"
             )}
           >
-            {s === "" ? "All" : s}
+            {withCount(s === "" ? "All" : s, statusCounts[s])}
           </button>
         ))}
       </ChipRow>

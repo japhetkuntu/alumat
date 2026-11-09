@@ -1,6 +1,7 @@
 "use client";
 
 import { ReadMore } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -51,6 +52,8 @@ export default function AdminMentorshipPage() {
   const [requestPage, setRequestPage] = useState(1);
   const searchParams = useSearchParams();
   const [mentorStatusFilter, setMentorStatusFilter] = useState(() => searchParams.get("status") ?? "");
+
+  const mentorCounts = useFilterCounts(["admin-mentor-profiles"], ["", "Pending", "Approved", "Rejected"], async (s) => (await getMentorProfiles(1, 1, s || undefined)).totalCount);
   const [mentorSearch, setMentorSearch] = useState("");
   const mentorPageSize = 20;
   const requestPageSize = 20;
@@ -161,7 +164,7 @@ export default function AdminMentorshipPage() {
                     mentorStatusFilter === s ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   }`}
                 >
-                  {s === "" ? "All" : s}
+                  {withCount(s === "" ? "All" : s, mentorCounts[s])}
                 </button>
               ))}
             </ChipRow>

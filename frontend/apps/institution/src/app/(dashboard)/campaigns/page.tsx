@@ -1,6 +1,7 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
@@ -198,6 +199,8 @@ export default function AdminCampaignsPage() {
   const [archiveTarget, setArchiveTarget] = useState<Campaign | null>(null);
   const [unarchiveTarget, setUnarchiveTarget] = useState<Campaign | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+
+  const statusCounts = useFilterCounts(["admin-campaigns"], ["", "Active", "Closed", "Completed", "Archived"], async (s) => (await getCampaigns(1, 1, s || undefined)).totalCount);
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const qc = useQueryClient();
@@ -338,7 +341,7 @@ export default function AdminCampaignsPage() {
 
       {/* Status Filter — flat pill row matching the design */}
       <ChipRow label="Filter" activeKey={String(statusFilter)}>
-        {["", "Active", "Draft", "Closed", "Completed", "Archived"].map((s) => (
+        {["", "Active", "Closed", "Completed", "Archived"].map((s) => (
           <button
             key={s}
             aria-pressed={statusFilter === s}
@@ -348,7 +351,7 @@ export default function AdminCampaignsPage() {
               statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
             )}
           >
-            {s === "" ? "All" : s}
+            {withCount(s === "" ? "All" : s, statusCounts[s])}
           </button>
         ))}
       </ChipRow>

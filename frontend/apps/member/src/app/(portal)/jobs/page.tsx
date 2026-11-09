@@ -1,5 +1,7 @@
 "use client";
 
+import { useFilterCounts, withCount } from "@alumni/ui";
+
 import { useState } from "react";
 import { richTextToPlain } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
@@ -32,6 +34,7 @@ export default function MemberJobsPage() {
   const [locationFilter, setLocationFilter]  = useState("");
   const [communityId,    setCommunityId]     = useState<string | null>(() => searchParams.get("communityId"));
   const [page,           setPage]            = useState(1);
+  const typeCounts = useFilterCounts(["m-jobs"], JOB_TYPES, async (t) => (await getJobs(1, 1, t || undefined, undefined, undefined, undefined, undefined, communityId || undefined)).totalCount, { scope: communityId });
   const pageSize = 18;
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -95,7 +98,7 @@ export default function MemberJobsPage() {
                 ? { background: "var(--primary)", color: "white" }
                 : { background: "var(--background)", color: "var(--muted-foreground)" }}
             >
-              {t === "" ? "All" : t}
+              {withCount(t === "" ? "All" : t, typeCounts[t])}
             </button>
           ))}
           <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />

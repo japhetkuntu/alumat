@@ -1,5 +1,7 @@
 "use client";
 
+import { useFilterCounts, withCount } from "@alumni/ui";
+
 import { useState } from "react";
 import { richTextToPlain } from "@alumni/ui";
 import { NotifyMeButton } from "@/components/member/notify-me-button";
@@ -42,6 +44,7 @@ export default function MemberResourcesPage() {
   const [search, setSearch] = useState("");
   const [communityId, setCommunityId] = useState<string | null>(() => searchParams.get("communityId"));
   const [page, setPage] = useState(1);
+  const categoryCounts = useFilterCounts(["m-resources"], categories.map((c) => (c === "All" ? "" : c)), async (c) => (await getResources(1, 1, c || undefined, undefined, undefined, undefined, undefined, communityId || undefined)).totalCount, { scope: communityId });
   const pageSize = 18;
 
   const { data, isLoading } = useQuery({
@@ -158,7 +161,7 @@ export default function MemberResourcesPage() {
                     : "bg-background text-muted-foreground border-border hover:border-primary/40"
                 }`}
               >
-                {c}
+                {withCount(c, categoryCounts[c === "All" ? "" : c])}
               </button>
             );
           })}

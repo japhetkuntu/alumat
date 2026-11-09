@@ -1,5 +1,6 @@
 "use client";
 
+import { withCount } from "@alumni/ui";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -162,6 +163,8 @@ function ScorecardTab() {
 
   const data = scorecard.data;
   const items = (data?.items ?? []).filter((i) => matchesFilter(i, filter));
+  // The rows are all here already, so each chip's number is counted from them with no further requests.
+  const filterCounts = data ? Object.fromEntries(FILTERS.map((f) => [f.value, data.items.filter((i) => matchesFilter(i, f.value)).length])) as Record<Filter, number> : undefined;
   const stages = funnel.data?.stages ?? [];
   const weeks = [...(funnel.data?.weeks ?? [])].reverse();
 
@@ -277,7 +280,7 @@ function ScorecardTab() {
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
                 }`}
               >
-                {f.label}
+                {withCount(f.label, filterCounts?.[f.value])}
               </button>
             ))}
           </ChipRow>

@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadError } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useEffect, useState } from "react";
@@ -165,6 +166,8 @@ export default function AdminNewsPage() {
   const [publishTarget, setPublishTarget] = useState<NewsPost | null>(null);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
+
+  const statusCounts = useFilterCounts(["admin-news"], ["", "Draft", "Published", "Archived"], async (s) => (await getNewsPosts(1, 1, undefined, s || undefined)).totalCount);
   const [page, setPage] = useState(Number(searchParams.get("page") ?? "1"));
   const [editError, setEditError] = useState("");
   const pageSize = 20;
@@ -289,7 +292,7 @@ export default function AdminNewsPage() {
                 statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
               }`}
             >
-              {s === "" ? "All" : s}
+              {withCount(s === "" ? "All" : s, statusCounts[s])}
             </button>
           ))}
         </ChipRow>

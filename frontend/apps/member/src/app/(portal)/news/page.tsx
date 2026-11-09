@@ -1,5 +1,7 @@
 "use client";
 
+import { useFilterCounts, withCount } from "@alumni/ui";
+
 import { useState } from "react";
 import { ChipRow } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
@@ -19,7 +21,8 @@ import { cn } from "@alumni/ui";
 import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
-const CATEGORIES = ["All", "Announcement", "Achievement", "News", "Event", "Opportunity"];
+// The same kinds an administrator can post under, so nothing they post is missing a chip.
+const CATEGORIES = ["All", "Announcement", "Achievement", "News", "Event", "Opportunity", "Other"];
 
 function CategoryPill({ category }: { category: string }) {
   return <Badge className="text-[12px]">{category}</Badge>;
@@ -30,6 +33,8 @@ export default function MemberNewsPage() {
   const [category, setCategory] = useState("");
   const [communityId, setCommunityId] = useState<string | null>(() => searchParams.get("communityId"));
   const [page,     setPage]     = useState(1);
+  // How many posts each category holds, within the source chosen, so a chip reads as something worth opening.
+  const categoryCounts = useFilterCounts(["m-news"], CATEGORIES.map((c) => (c === "All" ? "" : c)), async (c) => (await getNewsPosts(1, 1, c || undefined, undefined, communityId || undefined)).totalCount, { scope: communityId });
   const pageSize = 20;
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -62,7 +67,7 @@ export default function MemberNewsPage() {
                   : "border-border text-muted-foreground hover:border-primary/40",
               )}
             >
-              {c}
+              {withCount(c, categoryCounts[c === "All" ? "" : c])}
             </button>
           );
         })}

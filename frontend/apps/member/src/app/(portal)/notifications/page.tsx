@@ -1,5 +1,7 @@
 "use client";
 
+import { useFilterCounts, withCount } from "@alumni/ui";
+
 import { useState } from "react";
 import { ChipRow } from "@alumni/ui";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -206,6 +208,13 @@ export default function NotificationsPage() {
   });
 
   const unreadCount = unreadQuery.data ?? 0;
+  // All and Unread come from the server. The kinds are filtered here, so they are counted only once everything is loaded:
+  // a number from the first page alone would be wrong.
+  const kindCount = (t: string): number | undefined => {
+    if (t === "All") return data?.pages[0]?.totalCount;
+    if (t === "Unread") return unreadCount;
+    return hasNextPage === false ? allNotifications.filter((n) => TAB_TYPES[t]?.includes(n.type)).length : undefined;
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[860px] mx-auto space-y-6">
@@ -251,15 +260,15 @@ export default function NotificationsPage() {
               : { background: "var(--background)", color: "var(--muted-foreground)" }}
           >
             {t}
-            {t === "Unread" && unreadCount > 0 && (
+            {kindCount(t) !== undefined && !(t === "Unread" && unreadCount === 0) && (
               <span
                 className="ml-1.5 px-1.5 py-0.5 text-[12px] font-bold"
                 style={{
-                  background: tab === "Unread" ? "rgba(255,255,255,0.2)" : "var(--brand-primary-100, var(--color-background-info))",
-                  color:      tab === "Unread" ? "white" : "var(--primary)",
+                  background: tab === t ? "rgba(255,255,255,0.2)" : t === "Unread" ? "var(--brand-primary-100, var(--color-background-info))" : "var(--muted)",
+                  color:      tab === t ? "white" : t === "Unread" ? "var(--primary)" : "var(--muted-foreground)",
                 }}
               >
-                {unreadCount}
+                {kindCount(t)}
               </span>
             )}
           </button>

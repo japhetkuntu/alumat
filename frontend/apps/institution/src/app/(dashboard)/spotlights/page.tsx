@@ -2,6 +2,7 @@
 
 import { useCohortPhrase, useInstitutionNavTheme } from "@/components/institution/institution-layout";
 import { ReadMore } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
@@ -38,6 +39,8 @@ export default function AdminSpotlightsPage() {
 
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
+
+  const statusCounts = useFilterCounts(["admin-spotlights"], ["", "Pending", "Approved", "Rejected", "Archived"], async (s) => (await getSpotlights(1, 1, s || undefined)).totalCount);
   const [page, setPage] = useState(1);
   const [approveTarget, setApproveTarget] = useState<Spotlight | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Spotlight | null>(null);
@@ -181,7 +184,7 @@ export default function AdminSpotlightsPage() {
                 : "bg-white text-foreground border-border hover:bg-muted"
             }`}
           >
-            {s === "" ? "All" : s}
+            {withCount(s === "" ? "All" : s, statusCounts[s])}
           </button>
         ))}
       </ChipRow>

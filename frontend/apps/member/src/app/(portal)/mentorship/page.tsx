@@ -1,5 +1,7 @@
 "use client";
 
+import { useFilterCounts, withCount } from "@alumni/ui";
+
 import { ReportButton } from "@/components/member/report-button";
 import { useState } from "react";
 import { ChipRow } from "@alumni/ui";
@@ -254,15 +256,15 @@ export default function MemberMentorshipPage() {
       {/* Tab nav */}
       <ChipRow label="Mentorship sections" activeKey={view}>
         <TabBtn active={view === "find"}     onClick={() => setView("find")}>
-          <UserCheck size={13} /> Find a mentor
+          <UserCheck size={13} /> {withCount("Find a mentor", mentorsData?.totalCount)}
         </TabBtn>
         <TabBtn active={view === "requests"} onClick={() => setView("requests")}>
-          <Clock size={13} /> My requests
+          <Clock size={13} /> {withCount("My requests", requestsData ? requests.length : undefined)}
         </TabBtn>
         {myProfile && (
           <TabBtn active={view === "incoming"} onClick={() => setView("incoming")}>
             <Inbox size={13} />
-            Incoming{pendingIncoming > 0 ? ` (${pendingIncoming})` : ""}
+            {withCount("Incoming", incomingData ? pendingIncoming : undefined)}
           </TabBtn>
         )}
         <TabBtn active={view === "become"} onClick={() => setView("become")}>

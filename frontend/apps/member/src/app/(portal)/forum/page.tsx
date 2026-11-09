@@ -1,5 +1,7 @@
 "use client";
 
+import { useFilterCounts, withCount } from "@alumni/ui";
+
 import { useState } from "react";
 import { ChipRow, SegmentedControl } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -102,6 +104,7 @@ export default function MemberForumPage() {
   });
 
   const categories    = catsData?.results ?? [];
+  const categoryCounts = useFilterCounts(["m-forum-threads"], ["", ...categories.map((c) => c.id)], async (id) => (await getForumThreads(1, 1, id || undefined, undefined, undefined, communityId || undefined)).totalCount, { scope: communityId, enabled: categories.length > 0 });
   const openNewThread = () => {
     // Start in the category you are already looking at.
     if (selectedCategory) setForm((f) => ({ ...f, categoryId: selectedCategory }));
@@ -247,7 +250,7 @@ export default function MemberForumPage() {
                     ? { background: "var(--primary)", color: "var(--primary-foreground)" }
                     : { background: "var(--background)", color: "var(--muted-foreground)" }}
                 >
-                  {c.name}
+                  {withCount(c.name, categoryCounts[c.id])}
                 </button>
               ))}
             </>

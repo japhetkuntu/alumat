@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Badge, Button, Card, CardContent, ChipRow, EmptyState, FormError, LoadError, Pagination, Textarea, Label,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, CardSkeleton, ShieldAlert, formatDate,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, CardSkeleton, ShieldAlert, formatDate, useFilterCounts, withCount,
 } from "@alumni/ui";
 import { getContentReports, reviewContentReport, type ContentReport } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
@@ -50,6 +50,7 @@ export default function FlaggedContentPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [status, setStatus] = useState<string>("Open");
+  const statusCounts = useFilterCounts(["content-reports"], STATUS_FILTERS.map((f) => f.value), async (s) => (await getContentReports(1, 1, s || undefined)).totalCount);
   const [page, setPage] = useState(1);
   const [reviewing, setReviewing] = useState<{ report: ContentReport; outcome: "ActionTaken" | "Dismissed" } | null>(null);
   const [note, setNote] = useState("");
@@ -105,7 +106,7 @@ export default function FlaggedContentPage() {
             onClick={() => { setStatus(f.value); setPage(1); }}
             className={`border px-3 py-2 text-[12.5px] font-semibold transition-colors ${status === f.value ? "border-primary/30 bg-primary/10 text-primary" : "border-border bg-white text-foreground hover:bg-muted"}`}
           >
-            {f.label}
+            {withCount(f.label, statusCounts[f.value])}
           </button>
         ))}
       </ChipRow>

@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadError } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +37,7 @@ export default function InstitutionsPage() {
   const columns = showRevenue ? 7 : 6;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<InstitutionStatus | "All">("All");
+  const statusCounts = useFilterCounts(["institutions"], STATUS_FILTERS.map((f) => f.value), async (v) => (await getInstitutions({ page: 1, pageSize: 1, status: v === "All" ? undefined : v })).totalCount);
   const [exporting, setExporting] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -116,7 +118,7 @@ export default function InstitutionsPage() {
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
                 }`}
               >
-                {f.label}
+                {withCount(f.label, statusCounts[f.value])}
               </button>
             ))}
           </ChipRow>

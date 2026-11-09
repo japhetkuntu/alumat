@@ -1,6 +1,7 @@
 "use client";
 
 import { ReadMore } from "@alumni/ui";
+import { useFilterCounts, withCount } from "@alumni/ui";
 import { DetailSection, FactList, QuestionView, StageList, VariantTable } from "@/components/institution/config-details";
 import { ChipRow, ZoomableImage } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
@@ -433,6 +434,8 @@ export default function AdminStorePage() {
   const toggleProduct = (pid: string) => setOpenProducts((cur) => { const next = new Set(cur); if (next.has(pid)) next.delete(pid); else next.add(pid); return next; });
   const [deleteTarget, setDeleteTarget] = useState<StoreProduct | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+
+  const statusCounts = useFilterCounts(["admin-store-products"], ["", "Active", "Draft", "Archived"], async (s) => (await getStoreProducts(1, 1, s || undefined)).totalCount);
   const [page, setPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
   const pageSize = 20;
@@ -707,7 +710,7 @@ export default function AdminStorePage() {
                   statusFilter === s ? "bg-primary/10 text-primary border-primary/30" : "bg-white text-foreground border-border hover:bg-muted"
                 )}
               >
-                {s === "" ? "All" : s}
+                {withCount(s === "" ? "All" : s, statusCounts[s])}
               </button>
             ))}
           </ChipRow>
