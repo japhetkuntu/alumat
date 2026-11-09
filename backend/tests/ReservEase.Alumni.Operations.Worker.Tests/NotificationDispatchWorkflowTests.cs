@@ -488,6 +488,44 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
     }
 
     [WorkflowFact]
+    public async Task A_push_channel_alerts_the_recipients_who_have_a_device_and_makes_no_notification_of_its_own()
+    {
+        var rig = new Rig();
+        await rig.Seed(Device("m1"), Device("m3"));
+
+        await Send(rig, NotificationRequest.Broadcast(Inst, Audience(), "Accra Chapter", "Ama: Meeting on Saturday", ["Push"]));
+
+        rig.Push.Verify(p => p.SendAsync(It.IsAny<PushSubscriptionDto>(), "Accra Chapter", "Ama: Meeting on Saturday", It.Is<string?>(u => u != null && u.EndsWith("/notifications")), It.IsAny<CancellationToken>()), Times.Exactly(2));   // m1 and m3; m2 has no device
+        Assert.Empty(await rig.Notes());   // the in-app notification is the caller's to make: a push channel alone adds none
+        Assert.Empty(rig.SmsSent);
+        Assert.Empty(rig.EmailsSent);
+    }
+
+    [WorkflowFact]
+    public async Task A_broadcast_that_does_not_ask_for_push_sends_none()
+    {
+        var rig = new Rig();
+        await rig.Seed(Device("m1"));
+
+        await Send(rig, NotificationRequest.Broadcast(Inst, Audience(), "T", "M", ["InApp", "Sms", "Email"]));
+
+        rig.Push.Verify(p => p.SendAsync(It.IsAny<PushSubscriptionDto>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [WorkflowFact]
+    public async Task Push_and_email_together_each_reach_their_audience()
+    {
+        var rig = new Rig();
+        await rig.Seed(Device("m2"));
+
+        await Send(rig, NotificationRequest.Broadcast(Inst, Audience(), "Chapter", "Ama: hello", ["Push", "Email"]));
+
+        rig.Push.Verify(p => p.SendAsync(It.IsAny<PushSubscriptionDto>(), "Chapter", "Ama: hello", It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(new[] { "a@x.com", "b@x.com" }, rig.EmailsSent.Select(e => e.To.Single().Email).OrderBy(x => x));
+        Assert.Empty(await rig.Notes());
+    }
+
+    [WorkflowFact]
     public async Task A_broadcast_with_no_recipients_does_nothing()
     {
         var rig = new Rig();

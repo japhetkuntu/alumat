@@ -124,6 +124,9 @@ public class Institution : BaseEntity
     /// <summary>Whether this institution may send a broadcast by SMS. Set by the platform, off for new institutions.</summary>
     public bool BroadcastSmsAllowed { get; set; }
 
+    /// <summary>How many messages one leader may send to the same group in a day. The institution chooses it; <see cref="Alumni.GroupMessaging"/> holds the bounds.</summary>
+    public int GroupMessagesPerDay { get; set; } = Alumni.GroupMessaging.DefaultPerDay;
+
     /// <summary>Retired: WhatsApp broadcasts were removed from the product. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public bool BroadcastWhatsAppAllowed { get; set; }
 

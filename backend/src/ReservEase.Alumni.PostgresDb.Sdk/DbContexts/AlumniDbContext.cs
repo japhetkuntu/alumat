@@ -57,6 +57,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Community> Communities => Set<Community>();
     public DbSet<AudienceSegment> AudienceSegments => Set<AudienceSegment>();
     public DbSet<CommunityMembership> CommunityMemberships => Set<CommunityMembership>();
+    public DbSet<LeadershipRole> LeadershipRoles => Set<LeadershipRole>();
+    public DbSet<LeadershipPost> LeadershipPosts => Set<LeadershipPost>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignUpdate> CampaignUpdates => Set<CampaignUpdate>();
     public DbSet<Contribution> Contributions => Set<Contribution>();
@@ -540,6 +542,17 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(m => m.MemberId);
         modelBuilder.Entity<CommunityMembership>()
             .HasIndex(m => new { m.InstitutionId, m.CreatedAt });
+
+        // Leadership posts: read by group (the page of a year group or community) and by member (their profile and the directory).
+        modelBuilder.Entity<LeadershipPost>()
+            .HasIndex(p => new { p.InstitutionId, p.ScopeType, p.ScopeId });
+        modelBuilder.Entity<LeadershipPost>()
+            .HasIndex(p => p.MemberId);
+        modelBuilder.Entity<LeadershipPost>()
+            .HasIndex(p => p.RoleId);
+        modelBuilder.Entity<LeadershipRole>()
+            .Property(r => r.Privileges).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
 
         // MentorProfile: filter by status, member lookup
         modelBuilder.Entity<MentorProfile>()

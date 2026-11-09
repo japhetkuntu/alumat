@@ -108,6 +108,8 @@ builder.Services.AddScoped<IInstitutionSpotlightService, InstitutionSpotlightSer
 builder.Services.AddScoped<IInstitutionAuditLogService, InstitutionAuditLogService>();
 builder.Services.AddScoped<IBatchService, BatchService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
+builder.Services.AddScoped<ILeadershipService, LeadershipService>();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Services.LeadershipAccess>();
 builder.Services.AddScoped<IBroadcastService, BroadcastService>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 builder.Services.AddScoped<IStoreService, StoreService>();

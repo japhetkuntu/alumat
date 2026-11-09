@@ -6,6 +6,16 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Services;
 /// <summary>Finding the next member number (SLUG-YEAR-NNNN) without reading every member who already has one.</summary>
 public static class MemberNumbers
 {
+    /// <summary>
+    /// The start of every member number: the institution's slug, then the graduation year. There is no year when the community has none, or
+    /// this member simply has none (Optional mode): never a "-0-".
+    /// </summary>
+    public static string Prefix(string? slug, bool isCommunity, int? graduationYear)
+    {
+        var name = string.IsNullOrWhiteSpace(slug) ? "MEMBER" : slug.ToUpperInvariant();
+        return isCommunity || graduationYear is null or <= 0 ? $"{name}-" : $"{name}-{graduationYear}-";
+    }
+
     /// <summary>How many of the highest numbers are read. Only an unreadable suffix could push the real maximum out of this window.</summary>
     private const int Window = 25;
 

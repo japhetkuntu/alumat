@@ -162,17 +162,8 @@ public class MemberManagementService(
     /// </summary>
     private async Task<string> GetMemberNumberPrefixAsync(int? graduationYear)
     {
-        string slug = "MEMBER";
-        var isCommunity = false;
-        if (!string.IsNullOrEmpty(currentTenant.InstitutionId))
-        {
-            var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
-            if (!string.IsNullOrWhiteSpace(institution?.Slug))
-                slug = institution.Slug.ToUpperInvariant();
-            isCommunity = institution?.OrganizationType == OrganizationTypes.Community;
-        }
-        // No year segment when the community has no years, or this member simply has none (Optional mode): never a "-0-".
-        return isCommunity || graduationYear is null or <= 0 ? $"{slug}-" : $"{slug}-{graduationYear}-";
+        var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        return MemberNumbers.Prefix(institution?.Slug, institution?.OrganizationType == OrganizationTypes.Community, graduationYear);
     }
 
     public async Task<IApiResponse<PgPagedResult<MemberListItem>>> GetMembersAsync(MemberListFilter filter, AuthData admin)

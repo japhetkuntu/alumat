@@ -458,6 +458,17 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
                 }
             }
         }
+
+        // A phone or desktop alert, for the people who have set the app up for them. A channel of its own, so a broadcast that does not ask
+        // for it behaves exactly as before; the patch keeps a workflow that started earlier replaying the way it ran.
+        if (channels.Contains("Push", StringComparer.OrdinalIgnoreCase) && Workflow.Patched("broadcast-push-channel"))
+        {
+            var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+            var pushTitle = string.IsNullOrWhiteSpace(request.Title) ? "Announcement" : request.Title;
+            var pushUrl = MemberUrl(institution, "/notifications");
+            foreach (var r in recipients)
+                await SendPushIfEligibleAsync(r.Id, "Member", pushTitle, request.Message!, pushUrl);
+        }
     }
 
     private async Task ProcessClassNoteAlertAsync(NotificationRequest request)
