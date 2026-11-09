@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Building2,
   CreditCard,
+  Landmark,
   FileText,
   TrendingUp,
   Users,
@@ -44,6 +45,7 @@ const navItems = [
   { href: "/onboarding-leads", label: "Onboarding & Demos", icon: Inbox },
   { href: "/marketing-campaigns", label: "Marketing Campaigns", icon: Megaphone },
   { href: "/billing", label: "Payments & Revenue", icon: CreditCard },
+  { href: "/payout-accounts", label: "Payout accounts", icon: Landmark },
   { href: "/analytics", label: "Analytics", icon: TrendingUp },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/staff", label: "Platform Staff", icon: Users },
@@ -70,6 +72,7 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
     if ((item.href === "/staff" || item.href === "/audit-log") && !isSuperAdmin) return false;
     if (item.href === "/members" && !isSuperAdmin && !isSupport) return false;
     if (item.href === "/activation" && user?.role === "Billing") return false;
+    if (item.href === "/payout-accounts" && !isSuperAdmin && user?.role !== "Billing") return false;
     if (item.href === "/institution-health" && !isSuperAdmin && !isSupport) return false;
     return true;
   });

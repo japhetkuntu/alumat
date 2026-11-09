@@ -352,6 +352,54 @@ export async function getPayoutForecast(): Promise<PlatformPayoutForecast> {
   return res.data.data!;
 }
 
+// ─── Payout accounts on record ─────────────────────────────────────────────
+
+export type PayoutAccountKind = "Institution" | "YearGroup" | "Group";
+/** Live: its own account is active. SharesInstitution: approved to use the institution's. */
+export type PayoutAccountState = "Live" | "SharesInstitution" | "Pending" | "Rejected";
+
+/** One payout account the platform holds on record, with the details it was set up with. The number is masked until revealed on purpose. */
+export interface PayoutAccount {
+  kind: PayoutAccountKind;
+  id: string;
+  name: string;
+  institutionId: string;
+  institutionName: string;
+  state: PayoutAccountState;
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumberMasked?: string | null;
+  subaccountCode?: string | null;
+  decidedAt?: string | null;
+  decidedBy?: string | null;
+  decisionNote?: string | null;
+  /** A newer submission is waiting; the details shown stay as approved. */
+  changeAwaitingApproval: boolean;
+  /** The details shown were submitted and are not approved yet. */
+  showingSubmitted: boolean;
+}
+
+export interface PayoutAccountsPage {
+  /** Cover the institution and search chosen, whatever the state filter, so they can act as the filter. */
+  counts: { live: number; pending: number; sharesInstitution: number; rejected: number };
+  results: PayoutAccount[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function getPayoutAccounts(params: { institutionId?: string; kind?: string; state?: string; search?: string; page?: number; pageSize?: number }) {
+  const res = await platformClient.get<ApiResponse<PayoutAccountsPage>>("/payout-accounts", { params });
+  return res.data.data!;
+}
+
+/** The full account number. Asking is logged against the signed-in staff member. */
+export async function revealPayoutAccountNumber(kind: PayoutAccountKind, id: string): Promise<string> {
+  const res = await platformClient.get<ApiResponse<{ accountNumber: string }>>(`/payout-accounts/${kind}/${encodeURIComponent(id)}/number`);
+  return res.data.data!.accountNumber;
+}
+
 /** A batch whose payout setup (see Institution.Api's BatchesController.SubmitPayoutSetup) is awaiting review. */
 export interface PendingBatchPayout {
   batchId: string;

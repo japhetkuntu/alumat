@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { toast } from "sonner";
 import { InfoTip } from "@alumni/ui";
 import { Card, CardContent, StatCard } from "@alumni/ui";
@@ -124,7 +125,9 @@ export default function BillingPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <PageHeading title="Payments & Revenue" description="Platform-wide revenue operations across every institution." />
+      <PageHeading title="Payments & Revenue" description="Platform-wide revenue operations across every institution.">
+        <Link href="/payout-accounts"><Button variant="outline" size="sm" className="gap-1.5"><Landmark size={14} />Payout accounts</Button></Link>
+      </PageHeading>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5 max-sm:[&>*:nth-child(3)]:col-span-2">
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Active institutions</p><p className="text-[24px] font-bold mt-1">{activeInstitutions.length}</p></CardContent></Card>
