@@ -231,7 +231,7 @@ function AccountRow({ account: a }: { account: PayoutAccount }) {
         ) : a.state === "Pending" ? (
           <p className="text-muted-foreground">Waiting for a decision.</p>
         ) : null}
-        {a.decisionNote && <p className="mt-2 rounded-md bg-destructive/10 px-2.5 py-1.5 text-[12.5px] leading-snug">{a.decisionNote}</p>}
+        {a.decisionNote && <p className={cn("mt-2 rounded-md px-2.5 py-1.5 text-[12.5px] leading-snug", a.state === "Rejected" ? "bg-destructive/10" : "bg-muted")}>{a.decisionNote}</p>}
       </div>
     </li>
   );
