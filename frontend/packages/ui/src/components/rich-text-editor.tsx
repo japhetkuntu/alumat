@@ -257,7 +257,7 @@ export function RichTextEditor({
   const nearLimit = length > maxChars * 0.9;
 
   return (
-    <div className={cn("overflow-hidden border border-input bg-background transition-colors focus-within:border-primary", className)}>
+    <div className={cn("min-w-0 max-w-full overflow-hidden border border-input bg-background transition-colors focus-within:border-primary", className)}>
       <Toolbar editor={editor} variant={variant} linkOpen={linkOpen} onToggleLink={() => setLinkOpen((o) => !o)} />
       {linkOpen && <LinkBar key={String(editor.getAttributes("link").href ?? "")} editor={editor} onClose={() => setLinkOpen(false)} />}
       <EditorContent editor={editor} />

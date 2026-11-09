@@ -20,6 +20,12 @@ export interface FormSheetProps {
   savingLabel?: string;
   saving?: boolean;
   submitDisabled?: boolean;
+  /** For a sheet that only shows something (a list, a summary): no save button, and the close button says what it is. */
+  hideSubmit?: boolean;
+  /** For a sheet where leaving loses nothing (a review step): closing never asks about unsaved changes. */
+  noDiscardPrompt?: boolean;
+  /** What the dismiss button says. "Cancel" suits a form; "Close" suits a sheet with nothing to save. */
+  cancelLabel?: string;
   /** A message from the server about what went wrong, shown above the save bar so it is never off-screen. */
   error?: string | null;
   size?: "md" | "lg";
@@ -33,19 +39,19 @@ export interface FormSheetProps {
  * changes asks first.
  */
 export function FormSheet({
-  open, onClose, title, description, formId, submitLabel = "Save", savingLabel = "Saving", saving, submitDisabled, error, size = "md", children,
+  open, onClose, title, description, formId, submitLabel = "Save", savingLabel = "Saving", saving, submitDisabled, hideSubmit, noDiscardPrompt, cancelLabel = "Cancel", error, size = "md", children,
 }: FormSheetProps) {
   const [dirty, setDirty] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
 
-  // A fresh start each time it opens.
+  // A fresh start each time it opens, and when the sheet moves on to a different form (a step back, a next step).
   React.useEffect(() => {
     if (open) { setDirty(false); setConfirming(false); }
-  }, [open]);
+  }, [open, formId]);
 
   const requestClose = () => {
     if (saving) return;
-    if (dirty) setConfirming(true);
+    if (dirty && !noDiscardPrompt) setConfirming(true);
     else onClose();
   };
 
@@ -90,7 +96,7 @@ export function FormSheet({
           </header>
 
           <div
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6"
+            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-5 sm:px-6"
             onInputCapture={() => setDirty(true)}
             onChangeCapture={() => setDirty(true)}
           >
@@ -109,8 +115,8 @@ export function FormSheet({
               </div>
             ) : (
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-                <Button type="button" variant="outline" onClick={requestClose} disabled={saving}>Cancel</Button>
-                <Button type="submit" form={formId} isLoading={saving} loadingText={savingLabel} disabled={submitDisabled}>{submitLabel}</Button>
+                <Button type="button" variant="outline" onClick={requestClose} disabled={saving}>{cancelLabel}</Button>
+                {!hideSubmit && <Button type="submit" form={formId} isLoading={saving} loadingText={savingLabel} disabled={submitDisabled}>{submitLabel}</Button>}
               </div>
             )}
           </footer>

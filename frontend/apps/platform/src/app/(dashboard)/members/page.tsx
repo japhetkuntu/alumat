@@ -97,7 +97,7 @@ export default function PlatformMembersPage() {
             <TableRow>
               <TableHead>Member</TableHead>
               <TableHead>Institution</TableHead>
-              <TableHead>Graduation year</TableHead>
+              <TableHead>Year group</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last sign-in</TableHead>
               <TableHead>

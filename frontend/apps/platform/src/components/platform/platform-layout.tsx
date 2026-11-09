@@ -144,7 +144,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
 
   // Client pages can't export metadata, so the browser tab and history show the page name here.
   useEffect(() => {
-    const base = document.title.split(" · ").pop() || "Alumni Portal";
+    const base = document.title.split(" · ").pop() || "AlumUnion";
     document.title = `${pageTitle} · ${base}`;
   }, [pageTitle]);
 
