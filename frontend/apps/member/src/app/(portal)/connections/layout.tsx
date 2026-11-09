@@ -49,7 +49,7 @@ export default function ConnectionsLayout({ children }: { children: React.ReactN
 
   return (
     <div className="mx-auto max-w-[1200px] lg:grid lg:h-[calc(100dvh-3.5rem-3rem)] lg:grid-cols-[360px_minmax(0,1fr)] lg:overflow-hidden lg:rounded-2xl lg:border lg:shadow-sm" style={{ borderColor: "var(--border)" }}>
-      <aside className={cn("min-h-0 flex-col lg:flex lg:border-r", inChat ? "hidden" : "flex h-[calc(100dvh-8.5rem)] sm:h-[calc(100dvh-9.5rem)]")} style={{ borderColor: "var(--border)" }}>
+      <aside className={cn("min-h-0 flex-col lg:flex lg:border-r", inChat ? "hidden" : "flex h-[calc(100dvh-8.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] sm:h-[calc(100dvh-9.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))]")} style={{ borderColor: "var(--border)" }}>
         <Suspense fallback={null}><ConversationList activeId={activeId} /></Suspense>
       </aside>
       {pinned

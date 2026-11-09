@@ -341,7 +341,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   let itemIndex = 0;
 
   return (
-    <div className="flex flex-col h-full bg-sidebar w-[240px] border-r border-sidebar-border select-none">
+    <div className="flex flex-col h-full bg-sidebar w-[240px] border-r border-sidebar-border select-none" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="p-4 mb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors cursor-pointer group min-w-0">
@@ -636,7 +636,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
             fixed + backdrop-blur layer can fail to redraw after a sibling blur
             layer (a modal overlay, the notification panel) unmounts. */}
         <div
-          className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl"
+          className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6 h-[calc(3.5rem+env(safe-area-inset-top))] sm:h-[calc(4rem+env(safe-area-inset-top))] border-b border-border/40 bg-background/80 backdrop-blur-xl"
           style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
         >
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -663,7 +663,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-14 sm:pt-16 lg:pt-0 pb-24 lg:pb-0 scroll-touch">
+        <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-[calc(3.5rem+env(safe-area-inset-top))] sm:pt-[calc(4rem+env(safe-area-inset-top))] lg:pt-0 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
               {myProfile?.integrationBanner && <PartnerBanner {...myProfile.integrationBanner} />}
