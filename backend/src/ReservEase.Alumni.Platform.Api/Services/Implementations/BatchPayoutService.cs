@@ -128,6 +128,12 @@ public class BatchPayoutService(
                 batch.PaystackSubaccountCode = subaccount.Data.SubaccountCode;
         }
 
+        batch.PayoutDecidedAt = DateTime.UtcNow;
+
+        batch.PayoutDecidedBy = actorName;
+
+        batch.PayoutDecisionNote = null;
+
         batch.PayoutStatus = "Approved";
         batch.PendingPayoutChanges = null;
         batch.UpdatedAt = DateTime.UtcNow;
@@ -157,6 +163,12 @@ public class BatchPayoutService(
 
         if (batch.PayoutStatus != "Pending" || batch.PendingPayoutChanges is null)
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("This batch has no pending payout setup to reject");
+
+        batch.PayoutDecidedAt = DateTime.UtcNow;
+
+        batch.PayoutDecidedBy = actorName;
+
+        batch.PayoutDecisionNote = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
 
         batch.PayoutStatus = "Rejected";
         batch.PendingPayoutChanges = null;

@@ -94,6 +94,12 @@ public class InstitutionPayoutService(
         if (!string.IsNullOrWhiteSpace(subaccount.Data?.SubaccountCode))
             institution.PaystackSubaccountCode = subaccount.Data.SubaccountCode;
 
+        institution.PayoutDecidedAt = DateTime.UtcNow;
+
+        institution.PayoutDecidedBy = actorName;
+
+        institution.PayoutDecisionNote = null;
+
         institution.PayoutStatus = "Approved";
         institution.PendingPayoutChanges = null;
         institution.UpdatedAt = DateTime.UtcNow;
@@ -123,6 +129,12 @@ public class InstitutionPayoutService(
 
         if (institution.PayoutStatus != "Pending" || institution.PendingPayoutChanges is null)
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("This institution has no pending payout setup to reject");
+
+        institution.PayoutDecidedAt = DateTime.UtcNow;
+
+        institution.PayoutDecidedBy = actorName;
+
+        institution.PayoutDecisionNote = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
 
         institution.PayoutStatus = "Rejected";
         institution.PendingPayoutChanges = null;

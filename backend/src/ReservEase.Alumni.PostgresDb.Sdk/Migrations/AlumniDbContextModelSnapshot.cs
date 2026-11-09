@@ -484,6 +484,15 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("PayoutDecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PayoutDecidedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PayoutDecisionNote")
+                        .HasColumnType("text");
+
                     b.Property<string>("PayoutStatus")
                         .IsRequired()
                         .HasColumnType("text");
@@ -899,6 +908,15 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PayoutDecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PayoutDecidedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PayoutDecisionNote")
                         .HasColumnType("text");
 
                     b.Property<string>("PayoutStatus")
@@ -4655,6 +4673,15 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<bool>("PaidEventsEnabled")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("PayoutDecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PayoutDecidedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PayoutDecisionNote")
+                        .HasColumnType("text");
 
                     b.Property<string>("PayoutStatus")
                         .IsRequired()

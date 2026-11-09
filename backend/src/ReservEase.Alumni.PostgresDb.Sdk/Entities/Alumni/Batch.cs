@@ -46,6 +46,13 @@ public class Batch : BaseEntity, ITenantScoped
     /// either approve or reject.
     /// </summary>
     public BatchPayoutPendingChanges? PendingPayoutChanges { get; set; }
+
+    /// <summary>When platform staff last approved or rejected this payout setup. Kept after the decision so the record of what was approved is never lost.</summary>
+    public DateTime? PayoutDecidedAt { get; set; }
+    /// <summary>The name of the platform staff member who made that decision.</summary>
+    public string? PayoutDecidedBy { get; set; }
+    /// <summary>The reason given when it was rejected.</summary>
+    public string? PayoutDecisionNote { get; set; }
 }
 
 public class BatchPayoutPendingChanges

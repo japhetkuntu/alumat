@@ -127,6 +127,12 @@ public class GroupPayoutService(
                 group.PaystackSubaccountCode = subaccount.Data.SubaccountCode;
         }
 
+        group.PayoutDecidedAt = DateTime.UtcNow;
+
+        group.PayoutDecidedBy = actorName;
+
+        group.PayoutDecisionNote = null;
+
         group.PayoutStatus = "Approved";
         group.PendingPayoutChanges = null;
         group.UpdatedAt = DateTime.UtcNow;
@@ -156,6 +162,12 @@ public class GroupPayoutService(
 
         if (group.PayoutStatus != "Pending" || group.PendingPayoutChanges is null)
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("This group has no pending payout setup to reject");
+
+        group.PayoutDecidedAt = DateTime.UtcNow;
+
+        group.PayoutDecidedBy = actorName;
+
+        group.PayoutDecisionNote = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
 
         group.PayoutStatus = "Rejected";
         group.PendingPayoutChanges = null;
