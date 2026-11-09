@@ -119,8 +119,32 @@ export function Confirm({ title, message, confirmLabel, cancelLabel = "Keep it",
  * stays in view while the section scrolls. `onIntent` fires when someone hovers or focuses a tab, so its code and data can start loading
  * before the tap.
  */
+export type SectionTab<T extends string> = {
+  id: T; label: string;
+  /** How many the section holds. Shown beside the label, so it reads as something to open. Null or missing: no number. */
+  count?: number | null;
+  /** The number is something waiting on the leader, so it stands out. */
+  attention?: boolean;
+  /** Says what the number means, for a screen reader and on hover, e.g. "3 waiting for you". */
+  hint?: string;
+};
+
+/** The number beside a tab's label: quiet while the section is just counted, strong when something is waiting. */
+function CountPill({ tab, selected }: { tab: SectionTab<string>; selected: boolean }) {
+  if (tab.count == null) return null;
+  return (
+    <>
+      <span aria-hidden className={cn("ml-2 inline-block min-w-[1.5rem] rounded-full px-1.5 py-0.5 text-center text-[11.5px] font-semibold tabular-nums leading-none",
+        selected ? "bg-background/20 text-background" : tab.attention ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+        {tab.count > 99 ? "99+" : tab.count}
+      </span>
+      <span className="sr-only"> ({tab.hint ?? tab.count})</span>
+    </>
+  );
+}
+
 export function SectionNav<T extends string>({ tabs, value, onChange, onIntent }: {
-  tabs: { id: T; label: string }[]; value: T; onChange: (id: T) => void; onIntent?: (id: T) => void;
+  tabs: SectionTab<T>[]; value: T; onChange: (id: T) => void; onIntent?: (id: T) => void;
 }) {
   const row = useRef<HTMLDivElement>(null);
   // A deep link or a swipe can pick a tab that is off the edge of the row: bring it into view.
@@ -136,17 +160,17 @@ export function SectionNav<T extends string>({ tabs, value, onChange, onIntent }
     <>
       <div ref={row} role="tablist" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((t) => (
-          <button key={t.id} {...props(t)}
+          <button key={t.id} {...props(t)} title={t.hint}
             className={cn("min-h-10 shrink-0 rounded-full px-4 text-[13.5px] font-medium transition", value === t.id ? "bg-foreground text-background" : "text-muted-foreground ring-1 ring-border hover:bg-muted hover:text-foreground")}>
-            {t.label}
+            {t.label}<CountPill tab={t} selected={value === t.id} />
           </button>
         ))}
       </div>
       <nav aria-label="Sections" role="tablist" aria-orientation="vertical" className="sticky top-6 hidden flex-col gap-0.5 lg:flex">
         {tabs.map((t) => (
-          <button key={t.id} {...props(t)}
-            className={cn("rounded-[12px] px-3.5 py-2.5 text-left text-[14px] font-medium transition", value === t.id ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
-            {t.label}
+          <button key={t.id} {...props(t)} title={t.hint}
+            className={cn("flex items-center justify-between gap-3 rounded-[12px] px-3.5 py-2.5 text-left text-[14px] font-medium transition", value === t.id ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+            <span>{t.label}</span><CountPill tab={t} selected={value === t.id} />
           </button>
         ))}
       </nav>

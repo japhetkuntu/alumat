@@ -10,8 +10,14 @@ namespace ReservEase.Alumni.Member.Api.Controllers;
 
 /// <summary>What a member does as a leader of a year group or community, within the privileges of the roles they hold there.</summary>
 [Authorize]
-public class ManageController(IManageService manageService, IManageContentService contentService, IManageFundraisingService fundraisingService) : DefaultController
+public class ManageController(IManageService manageService, IManageContentService contentService, IManageFundraisingService fundraisingService, IManageCountsService countsService) : DefaultController
 {
+    [HttpGet("groups/{scopeType}/{scopeId}/counts")]
+    [SwaggerOperation(Summary = "What each section of a group's management area holds")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ManageCountsDto>))]
+    public async Task<IActionResult> GetCounts(string scopeType, string scopeId)
+        => (await countsService.GetAsync(User.GetAccount().Id, scopeType, scopeId)).ToActionResult();
+
     [HttpGet("groups")]
     [SwaggerOperation(Summary = "The groups I can manage, and what I can do in each")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<ManageGroupDto>>))]

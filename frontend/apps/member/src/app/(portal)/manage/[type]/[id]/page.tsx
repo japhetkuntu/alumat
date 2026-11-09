@@ -7,8 +7,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, EmptyState } from "@alumni/ui";
 import { useManageGroups } from "@/hooks/use-manage-groups";
 import { scopeTypeFromSlug } from "@/components/member/manage-parts";
-import { SectionNav, SectionSkeleton } from "@/components/member/manage-ui";
+import { SectionNav, SectionSkeleton, type SectionTab } from "@/components/member/manage-ui";
 import { LeaderWelcome } from "@/components/member/leader-welcome";
+import { useManageCounts } from "@/components/member/manage-counts";
 import { manageQueries } from "@/components/member/manage-queries";
 import type { ManageGroup } from "@/lib/member-api";
 
@@ -45,20 +46,28 @@ export default function ManageGroupPage({ params }: { params: Promise<{ type: st
   const group = groups.data?.find((g) => g.scopeType === scopeType && g.scopeId === id);
   const [tab, setTab] = useState<TabId | null>(tabFromAddress);
 
-  // Only the sections this member's roles allow, in a steady order.
+  const counts = useManageCounts(group);
+
+  // Only the sections this member's roles allow, in a steady order, each with how much it holds.
   const tabs = useMemo(() => {
     const has = (p: string) => !!group?.privileges.includes(p);
+    const waiting = counts?.waiting ?? 0;
+    const many = (n: number | null | undefined, one: string, other: string) => (n == null ? undefined : `${n} ${n === 1 ? one : other}`);
     return ([
       has("ViewReport") && { id: "overview" as const, label: "Overview" },
-      has("ManageMembers") && { id: "members" as const, label: "Members" },
-      has("ManageEvents") && { id: "events" as const, label: "Events" },
-      has("PostNews") && { id: "news" as const, label: "News" },
-      has("PostJobs") && { id: "jobs" as const, label: "Jobs" },
-      has("ShareResources") && { id: "links" as const, label: "Links" },
-      (has("ManageFundraisers") || has("ViewGiving")) && { id: "funds" as const, label: "Fundraisers" },
+      // Someone waiting to be let in is what a leader most needs to see; otherwise the tab just says how many are in.
+      has("ManageMembers") && {
+        id: "members" as const, label: "Members", count: waiting > 0 ? waiting : counts?.members, attention: waiting > 0,
+        hint: waiting > 0 ? `${waiting} waiting for you` : many(counts?.members, "member", "members"),
+      },
+      has("ManageEvents") && { id: "events" as const, label: "Events", count: counts?.events, hint: many(counts?.events, "upcoming event", "upcoming events") },
+      has("PostNews") && { id: "news" as const, label: "News", count: counts?.news, hint: many(counts?.news, "post", "posts") },
+      has("PostJobs") && { id: "jobs" as const, label: "Jobs", count: counts?.jobs, hint: many(counts?.jobs, "open job", "open jobs") },
+      has("ShareResources") && { id: "links" as const, label: "Links", count: counts?.links, hint: many(counts?.links, "link", "links") },
+      (has("ManageFundraisers") || has("ViewGiving")) && { id: "funds" as const, label: "Fundraisers", count: counts?.fundraisers, hint: many(counts?.fundraisers, "active fundraiser", "active fundraisers") },
       has("MessageGroup") && { id: "message" as const, label: "Message" },
-    ].filter(Boolean)) as { id: TabId; label: string }[];
-  }, [group]);
+    ].filter(Boolean)) as SectionTab<TabId>[];
+  }, [group, counts]);
   const active = tab && tabs.some((t) => t.id === tab) ? tab : tabs[0]?.id;
 
   const choose = useCallback((next: TabId) => {

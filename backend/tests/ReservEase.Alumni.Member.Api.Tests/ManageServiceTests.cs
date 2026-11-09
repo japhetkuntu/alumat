@@ -531,6 +531,17 @@ public class ManageServiceTests
         Assert.Equal(1, rig.Queued("Broadcast"));
     }
 
+    [Fact]
+    public async Task The_member_count_covers_everyone_in_the_group_and_those_waiting_and_is_for_those_who_may_approve()
+    {
+        var rig = await Seeded();
+
+        var counts = (await rig.Service().GetPeopleCountsAsync("ama", "Batch", "b2015")).Data!;
+
+        Assert.Equal((3, 1), (counts.Members, counts.Waiting));   // ama, ben and cy are in; dee is waiting
+        Assert.Equal(403, (await rig.Service().GetPeopleCountsAsync("kojo", "Batch", "b2015")).Code);   // kojo messages and reports for a chapter, but does not approve here
+    }
+
     // ── What has already been sent ───────────────────────────────────────────
 
     [Fact]

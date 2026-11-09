@@ -14,6 +14,7 @@ public interface IManageService
     Task<IApiResponse<List<GroupMemberDto>>> GetMembersAsync(string memberId, string scopeType, string scopeId);
     Task<IApiResponse<object>> DecideAsync(string memberId, string scopeType, string scopeId, string targetMemberId, bool approve);
 
+    Task<IApiResponse<GroupPeopleCountsDto>> GetPeopleCountsAsync(string memberId, string scopeType, string scopeId);
     Task<IApiResponse<List<GroupMessageHistoryDto>>> GetMessagesAsync(string memberId, string scopeType, string scopeId);
     Task<IApiResponse<ManageChannelsDto>> GetChannelsAsync(string memberId, string scopeType, string scopeId);
     Task<IApiResponse<GroupMessageResult>> MessageAsync(string memberId, string scopeType, string scopeId, string text, IReadOnlyCollection<string>? channels = null);

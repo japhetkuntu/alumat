@@ -127,6 +127,23 @@ public class ManageService(
 
     // ── Members ──────────────────────────────────────────────────────────────
 
+    /// <summary>How many members a group has and how many are waiting, counted over everyone rather than the newest 200 the list shows.</summary>
+    public async Task<IApiResponse<GroupPeopleCountsDto>> GetPeopleCountsAsync(string memberId, string scopeType, string scopeId)
+    {
+        try
+        {
+            var (group, refusal) = await GuardAsync<GroupPeopleCountsDto>(memberId, LeadershipPrivileges.ManageMembers, scopeType, scopeId);
+            if (refusal is not null) return refusal;
+            var (people, pending) = await PeopleAsync(group!);
+            return new GroupPeopleCountsDto(people.Count(p => p.Status == "Active"), pending).ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error counting group members {ScopeType}/{ScopeId}", scopeType, scopeId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<GroupPeopleCountsDto>("Failed to count the members");
+        }
+    }
+
     public async Task<IApiResponse<List<GroupMemberDto>>> GetMembersAsync(string memberId, string scopeType, string scopeId)
     {
         try

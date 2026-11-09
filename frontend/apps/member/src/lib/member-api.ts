@@ -1463,6 +1463,22 @@ export async function getManageGroups(): Promise<ManageGroup[]> {
   return res.data.data ?? [];
 }
 
+/** What each section of a group's management area holds, for the numbers on its tabs. A section the leader's roles don't include is null. */
+export interface ManageCounts {
+  members: number | null;
+  waiting: number | null;
+  events: number | null;
+  news: number | null;
+  jobs: number | null;
+  links: number | null;
+  fundraisers: number | null;
+}
+
+export async function getManageCounts(g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<ManageCounts> {
+  const res = await memberClient.get(`${groupPath(g)}/counts`);
+  return res.data.data;
+}
+
 export async function getGroupSummary(g: Pick<ManageGroup, "scopeType" | "scopeId">): Promise<GroupSummary> {
   const res = await memberClient.get(`${groupPath(g)}/summary`);
   return res.data.data;

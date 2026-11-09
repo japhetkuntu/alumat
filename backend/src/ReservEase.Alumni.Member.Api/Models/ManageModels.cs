@@ -34,6 +34,15 @@ public record GroupMessageResult(int Recipients);
 public record ManageChannelsDto(bool Email, bool Sms, int Recipients = 0, int LeftToday = 0, int PerDay = GroupMessaging.DefaultPerDay);
 
 /// <summary>One message already sent to a group: who sent it, the words, and how many people it reached.</summary>
+/// <summary>How many are in a group and how many are waiting to be let in.</summary>
+public record GroupPeopleCountsDto(int Members, int Waiting);
+
+/// <summary>
+/// What each section of a group's management area holds, for the numbers on its tabs. A section the leader's roles don't include is null,
+/// so it has no number and no tab.
+/// </summary>
+public record ManageCountsDto(int? Members, int? Waiting, int? Events, int? News, int? Jobs, int? Links, int? Fundraisers);
+
 public record GroupMessageHistoryDto(string Id, string SenderName, string Text, int Recipients, DateTime SentAt, bool IsMine);
 
 public record GroupEventDto(string Id, string Title, string? Description, string Venue, DateTime StartDate, DateTime? EndDate, int? Capacity, int RsvpCount, string Status, bool CanEdit,

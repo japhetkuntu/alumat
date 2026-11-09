@@ -133,6 +133,7 @@ builder.Services.AddScoped<GroupMedia>();
 builder.Services.AddScoped<IManageService, ManageService>();
 builder.Services.AddScoped<IManageContentService, ManageContentService>();
 builder.Services.AddScoped<IManageFundraisingService, ManageFundraisingService>();
+builder.Services.AddScoped<IManageCountsService, ManageCountsService>();
 builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Services.LeadershipAccess>();
 builder.Services.AddScoped<IStoreOrderService, StoreOrderService>();
 builder.Services.AddScoped<IEventTicketService, EventTicketService>();

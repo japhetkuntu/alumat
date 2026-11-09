@@ -1,5 +1,5 @@
 import {
-  getGroupCampaigns, getGroupEvents, getGroupJobs, getGroupMembers, getGroupNews, getGroupResources, getGroupSummary, getMessageChannels, getMessageHistory,
+  getGroupCampaigns, getGroupEvents, getGroupJobs, getGroupMembers, getGroupNews, getGroupResources, getGroupSummary, getManageCounts, getMessageChannels, getMessageHistory,
   type ManageGroup,
 } from "@/lib/member-api";
 
@@ -17,6 +17,7 @@ export const manageQueries = {
   jobs: (g: G) => ({ queryKey: ["manage-jobs", g.scopeType, g.scopeId] as const, queryFn: () => getGroupJobs(g), staleTime: 30_000 }),
   links: (g: G) => ({ queryKey: ["manage-links", g.scopeType, g.scopeId] as const, queryFn: () => getGroupResources(g), staleTime: 30_000 }),
   campaigns: (g: G) => ({ queryKey: ["manage-campaigns", g.scopeType, g.scopeId] as const, queryFn: () => getGroupCampaigns(g), staleTime: 30_000 }),
+  counts: (g: G) => ({ queryKey: ["manage-counts", g.scopeType, g.scopeId] as const, queryFn: () => getManageCounts(g), staleTime: 60_000 }),
   messages: (g: G) => ({ queryKey: ["manage-messages", g.scopeType, g.scopeId] as const, queryFn: () => getMessageHistory(g), staleTime: 30_000 }),
   channels: (g: G) => ({ queryKey: ["manage-channels", g.scopeType, g.scopeId] as const, queryFn: () => getMessageChannels(g), staleTime: 5 * 60_000 }),
 };
