@@ -443,6 +443,8 @@ export interface HomeModules {
   /** Feature keys that are switched on but have nothing in them for this member yet. */
   empty: string[];
   hasStoreOrders: boolean;
+  /** How much each switched-on module holds that this member can see, capped at 100. Events are the upcoming ones (key "Events:Upcoming"). */
+  counts?: Record<string, number>;
 }
 
 export async function getHomeFeed(): Promise<HomeFeed> {

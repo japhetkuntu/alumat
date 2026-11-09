@@ -239,6 +239,56 @@ public class HomeServiceTests
         Assert.Empty(await EmptyModules(service));
     }
 
+    private static async Task<Dictionary<string, int>> Counts(HomeService service, params string[] disabled)
+        => (await service.GetModulesAsync(Me, disabled)).Data!.Counts;
+
+    [Fact]
+    public async Task Each_module_is_counted_by_what_i_can_see_in_it()
+    {
+        var service = await Create(
+            new Job { Title = "A", Status = "Active" }, new Job { Title = "B", Status = "Active" }, new Job { Title = "Mine only elsewhere", Status = "Active", YearGroups = [1999] },
+            new NewsPost { Title = "N", Status = "Published" }, new NewsPost { Title = "Draft", Status = "Draft" },
+            new Resource { Title = "R1" }, new Resource { Title = "R2" }, new Resource { Title = "R3" });
+
+        var counts = await Counts(service);
+
+        Assert.Equal((2, 1, 3, 0), (counts[InstitutionFeatures.Jobs], counts[InstitutionFeatures.News], counts[InstitutionFeatures.Resources], counts[InstitutionFeatures.Forum]));
+    }
+
+    [Fact]
+    public async Task Events_are_counted_as_the_upcoming_ones_while_a_past_event_still_stops_the_module_being_empty()
+    {
+        var service = await Create(
+            new AlumniEvent { Title = "Next month", Status = "Upcoming", StartDate = DateTime.UtcNow.AddDays(30) },
+            new AlumniEvent { Title = "Next week", Status = "Upcoming", StartDate = DateTime.UtcNow.AddDays(7) },
+            new AlumniEvent { Title = "Last year", Status = "Completed", StartDate = DateTime.UtcNow.AddYears(-1) });
+
+        var modules = (await service.GetModulesAsync(Me, NothingDisabled)).Data!;
+
+        Assert.Equal(2, modules.Counts[HomeService.UpcomingEventsKey]);
+        Assert.Equal(3, modules.Counts[InstitutionFeatures.Events]);
+        Assert.DoesNotContain(InstitutionFeatures.Events, modules.Empty);
+    }
+
+    [Fact]
+    public async Task A_count_stops_at_one_hundred_so_the_database_never_counts_a_whole_big_table()
+    {
+        var service = await Create(Enumerable.Range(0, 130).Select(i => (object)new Resource { Title = $"R{i}" }).ToArray());
+
+        Assert.Equal(100, (await Counts(service))[InstitutionFeatures.Resources]);
+    }
+
+    [Fact]
+    public async Task A_switched_off_feature_is_not_counted_at_all()
+    {
+        var service = await Create(new Job { Title = "A", Status = "Active" }, new Resource { Title = "R" });
+
+        var counts = await Counts(service, InstitutionFeatures.Jobs);
+
+        Assert.DoesNotContain(InstitutionFeatures.Jobs, counts.Keys);
+        Assert.Equal(1, counts[InstitutionFeatures.Resources]);
+    }
+
     [Fact]
     public async Task Content_i_am_not_allowed_to_see_does_not_count()
     {

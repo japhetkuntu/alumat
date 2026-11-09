@@ -38,6 +38,11 @@ public class HomeModulesDto
 {
     /// <summary>Feature keys (see InstitutionFeatures) that are switched on but have nothing in them for this member yet.</summary>
     public List<string> Empty { get; set; } = [];
+    /// <summary>
+    /// How much each switched-on module holds that this member can see, capped at 100 (so 100 means "100 or more"). Events are the upcoming ones.
+    /// For the numbers beside the navigation, so the member knows there is something there without opening it.
+    /// </summary>
+    public Dictionary<string, int> Counts { get; set; } = [];
     /// <summary>Whether the member has ever placed a store order — their orders page stays reachable even after the store itself empties out.</summary>
     public bool HasStoreOrders { get; set; }
 }

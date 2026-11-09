@@ -162,45 +162,61 @@ public class HomeService(
         }
     }
 
-    /// <summary>The modules this member's portal should treat as empty: switched-on features with nothing in them that this member could see.</summary>
-    private async Task<List<string>> FindEmptyModulesAsync(MemberEntity me, string memberId, IReadOnlyCollection<string> disabledFeatures)
+    /// <summary>Counts stop here: a number is for telling a section has something in it, and "99+" says all of that, so the database never counts further.</summary>
+    private const int CountCap = 100;
+
+    /// <summary>
+    /// How much each switched-on module holds that this member could see, capped at <see cref="CountCap"/>. A module with none is empty.
+    /// Each count is a bounded scan (it stops at the cap), so a community with thousands of posts costs no more than one with a hundred.
+    /// Events are counted as upcoming ones in a key of their own, because a past event still keeps the module from being empty.
+    /// </summary>
+    private async Task<Dictionary<string, int>> FindModuleCountsAsync(MemberEntity me, string memberId, IReadOnlyCollection<string> disabledFeatures)
     {
         var myYear = me.GraduationYear;
         var communityIds = await GetApprovedCommunityIdsAsync(memberId);
+        var now = DateTime.UtcNow;
 
-        // A switched-off feature is neither empty nor full — the portal already hides it.
-        var checks = new (string Feature, Func<Task<bool>> HasContent)[]
+        var checks = new (string Key, string Feature, Func<Task<int>> Count)[]
         {
-            (InstitutionFeatures.Jobs, () => jobRepo.GetQueryable(j => j.Status == "Active"
+            (InstitutionFeatures.Jobs, InstitutionFeatures.Jobs, () => jobRepo.GetQueryable(j => j.Status == "Active"
                 && (j.CommunityId == null || communityIds.Contains(j.CommunityId))
-                && (j.YearGroups == null || j.YearGroups.Count == 0 || j.YearGroups.Contains(myYear))).AnyAsync()),
-            (InstitutionFeatures.Events, () => eventRepo.GetQueryable(e => e.Status != "Cancelled"
+                && (j.YearGroups == null || j.YearGroups.Count == 0 || j.YearGroups.Contains(myYear))).Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Events, InstitutionFeatures.Events, () => eventRepo.GetQueryable(e => e.Status != "Cancelled"
                 && (e.CommunityId == null || communityIds.Contains(e.CommunityId))
-                && (e.YearGroups == null || e.YearGroups.Count == 0 || e.YearGroups.Contains(myYear))).AnyAsync()),
-            (InstitutionFeatures.News, () => newsRepo.GetQueryable(p => p.Status == "Published"
+                && (e.YearGroups == null || e.YearGroups.Count == 0 || e.YearGroups.Contains(myYear))).Take(CountCap).CountAsync()),
+            (UpcomingEventsKey, InstitutionFeatures.Events, () => eventRepo.GetQueryable(e => e.Status == "Upcoming" && e.StartDate >= now
+                && (e.CommunityId == null || communityIds.Contains(e.CommunityId))
+                && (e.YearGroups == null || e.YearGroups.Count == 0 || e.YearGroups.Contains(myYear))).Take(CountCap).CountAsync()),
+            (InstitutionFeatures.News, InstitutionFeatures.News, () => newsRepo.GetQueryable(p => p.Status == "Published"
                 && (p.CommunityId == null || communityIds.Contains(p.CommunityId))
-                && (p.YearGroups == null || p.YearGroups.Count == 0 || p.YearGroups.Contains(myYear))).AnyAsync()),
-            (InstitutionFeatures.Forum, () => threadRepo.GetQueryable(t => !t.IsClosed
-                && (t.CommunityId == null || communityIds.Contains(t.CommunityId))).AnyAsync()),
-            (InstitutionFeatures.Mentorship, () => mentorRepo.GetQueryable(p => p.Status == "Approved").AnyAsync()),
-            (InstitutionFeatures.Resources, () => resourceRepo.GetQueryable(r => r.CommunityId == null || communityIds.Contains(r.CommunityId)).AnyAsync()),
-            (InstitutionFeatures.PhotoAlbums, () => albumRepo.GetQueryable(a => (a.CommunityId == null && a.YearGroups == null)
+                && (p.YearGroups == null || p.YearGroups.Count == 0 || p.YearGroups.Contains(myYear))).Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Forum, InstitutionFeatures.Forum, () => threadRepo.GetQueryable(t => !t.IsClosed
+                && (t.CommunityId == null || communityIds.Contains(t.CommunityId))).Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Mentorship, InstitutionFeatures.Mentorship, () => mentorRepo.GetQueryable(p => p.Status == "Approved").Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Resources, InstitutionFeatures.Resources, () => resourceRepo.GetQueryable(r => r.CommunityId == null || communityIds.Contains(r.CommunityId)).Take(CountCap).CountAsync()),
+            (InstitutionFeatures.PhotoAlbums, InstitutionFeatures.PhotoAlbums, () => albumRepo.GetQueryable(a => (a.CommunityId == null && a.YearGroups == null)
                 || (a.CommunityId != null && communityIds.Contains(a.CommunityId))
-                || (a.YearGroups != null && a.YearGroups.Contains(myYear))).AnyAsync()),
-            (InstitutionFeatures.BusinessDirectory, () => listingRepo.GetQueryable(l => l.Status == "Approved" && !l.IsHiddenByMember).AnyAsync()),
-            (InstitutionFeatures.Spotlights, () => spotlightRepo.GetQueryable(s => s.Status == "Approved").AnyAsync()),
-            (InstitutionFeatures.Store, () => productRepo.GetQueryable(p => p.Status == "Active").AnyAsync()),
-            (InstitutionFeatures.Services, () => serviceTypeRepo.GetQueryable(s => s.Status == "Active").AnyAsync()),
-            (InstitutionFeatures.Communities, () => communityRepo.GetQueryable(c => c.IsActive).AnyAsync()),
+                || (a.YearGroups != null && a.YearGroups.Contains(myYear))).Take(CountCap).CountAsync()),
+            (InstitutionFeatures.BusinessDirectory, InstitutionFeatures.BusinessDirectory, () => listingRepo.GetQueryable(l => l.Status == "Approved" && !l.IsHiddenByMember).Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Spotlights, InstitutionFeatures.Spotlights, () => spotlightRepo.GetQueryable(s => s.Status == "Approved").Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Store, InstitutionFeatures.Store, () => productRepo.GetQueryable(p => p.Status == "Active").Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Services, InstitutionFeatures.Services, () => serviceTypeRepo.GetQueryable(s => s.Status == "Active").Take(CountCap).CountAsync()),
+            (InstitutionFeatures.Communities, InstitutionFeatures.Communities, () => communityRepo.GetQueryable(c => c.IsActive).Take(CountCap).CountAsync()),
         };
 
-        var empty = new List<string>();
-        foreach (var (feature, hasContent) in checks)
-            if (!disabledFeatures.Contains(feature) && !await hasContent())
-                empty.Add(feature);
-
-        return empty;
+        // A switched-off feature is neither empty nor full: the portal already hides it, so it is not counted at all.
+        var counts = new Dictionary<string, int>();
+        foreach (var (key, feature, count) in checks)
+            if (!disabledFeatures.Contains(feature))
+                counts[key] = await count();
+        return counts;
     }
+
+    /// <summary>The key the number of upcoming events is under. Not a feature: the Events feature is empty only when it has no events at all, past ones included.</summary>
+    public const string UpcomingEventsKey = "Events:Upcoming";
+
+    /// <summary>What the cache holds for a member: which modules are empty and how much each holds.</summary>
+    private sealed record ModuleSnapshot(List<string> Empty, Dictionary<string, int> Counts);
 
     public async Task<IApiResponse<HomeModulesDto>> GetModulesAsync(string memberId, IReadOnlyCollection<string> disabledFeatures)
     {
@@ -213,16 +229,18 @@ public class HomeService(
             // The emptiness check is the same for a minute at a time, so it is reused instead of running a dozen queries on every home page load.
             // Store orders are checked fresh below: someone who has just bought something should see "My orders" at once.
             var cacheKey = $"home-modules:{memberId}:{string.Join(',', disabledFeatures.OrderBy(f => f, StringComparer.Ordinal))}";
-            if (cache is null || !cache.TryGetValue(cacheKey, out List<string>? empty) || empty is null)
+            if (cache is null || !cache.TryGetValue(cacheKey, out ModuleSnapshot? snapshot) || snapshot is null)
             {
-                empty = await FindEmptyModulesAsync(me, memberId, disabledFeatures);
-                cache?.Set(cacheKey, empty, ModulesCacheFor);
+                var counts = await FindModuleCountsAsync(me, memberId, disabledFeatures);
+                // Empty is worked out from the same counts: the module holds nothing at all. The upcoming-events key is not a module.
+                snapshot = new ModuleSnapshot(counts.Where(c => c.Value == 0 && c.Key != UpcomingEventsKey).Select(c => c.Key).ToList(), counts);
+                cache?.Set(cacheKey, snapshot, ModulesCacheFor);
             }
 
             var hasStoreOrders = !disabledFeatures.Contains(InstitutionFeatures.Store)
                 && await orderRepo.GetQueryable(o => o.MemberId == memberId).AnyAsync();
 
-            return new HomeModulesDto { Empty = empty, HasStoreOrders = hasStoreOrders }.ToOkApiResponse();
+            return new HomeModulesDto { Empty = snapshot.Empty, Counts = snapshot.Counts, HasStoreOrders = hasStoreOrders }.ToOkApiResponse();
         }
         catch (Exception e)
         {

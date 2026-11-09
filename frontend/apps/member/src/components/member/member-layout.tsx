@@ -224,7 +224,8 @@ export function useModuleActivity() {
     queryKey: ["m-home-modules"],
     queryFn: getHomeModules,
     enabled: isMember,
-    staleTime: 60_000,
+    // The server keeps these for a minute and the numbers beside the menu need no more care than that, so asking again every couple of minutes is plenty.
+    staleTime: 2 * 60_000,
   });
   return data;
 }
@@ -270,6 +271,33 @@ function PortalNudge() {
   return installVisible ? <InstallPromptBanner /> : <PushNotificationPrompt />;
 }
 
+/** Which module count each menu item shows: what is in the section, so a member knows there is something there before opening it. */
+const NAV_COUNT_KEY: Record<string, string> = {
+  "/events": "Events:Upcoming",
+  "/jobs": "Jobs",
+  "/news": "News",
+  "/forum": "Forum",
+  "/resources": "Resources",
+  "/albums": "PhotoAlbums",
+  "/business-directory": "BusinessDirectory",
+  "/spotlights": "Spotlights",
+  "/mentorship": "Mentorship",
+  "/communities": "Communities",
+  "/store": "Store",
+  "/services": "Services",
+};
+
+/** A quiet number: how much is in the section. A section's unread (or waiting) badge, which asks for attention, takes its place when it has one. */
+function NavCount({ count }: { count: number | undefined }) {
+  if (!count || count <= 0) return null;
+  return (
+    <span aria-label={`${count > 99 ? "99 or more" : count} in this section`}
+      className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-muted px-1.5 text-[11.5px] font-semibold leading-none tabular-nums text-muted-foreground">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
@@ -290,7 +318,11 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const introBadge = useIntroductionBadge();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
-  const canManage = (useManageGroups().data ?? []).length > 0;
+  const manageGroups = useManageGroups().data ?? [];
+  const canManage = manageGroups.length > 0;
+  // People waiting to be let in, across every group they lead: the one number in the menu that asks the member to act.
+  const waitingForLeader = manageGroups.reduce((n, g) => n + g.pendingCount, 0);
+  const counts = useModuleActivity()?.counts;
   const visibleGroups = navGroups
     .map((g) => ({
       ...g,
@@ -369,6 +401,11 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                       <NavBadge count={unreadByCategory[NAV_BADGE_CATEGORY[item.href]]} />
                     )}
                     {item.href === "/connections" && <NavBadge count={introBadge} />}
+                    {item.href === "/manage" && <NavBadge count={waitingForLeader} />}
+                    {/* A count only where nothing is asking for attention already. */}
+                    {NAV_COUNT_KEY[item.href] && !(NAV_BADGE_CATEGORY[item.href] && unreadByCategory[NAV_BADGE_CATEGORY[item.href]] > 0) && (
+                      <NavCount count={counts?.[NAV_COUNT_KEY[item.href]]} />
+                    )}
                   </Link>
                 );
               })}
