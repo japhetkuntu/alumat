@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { InfoTip } from "@alumni/ui";
 import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -166,10 +167,11 @@ export default function BillingPage() {
                     <TableHead>Institution</TableHead>
                     <TableHead>Last payout</TableHead>
                     <TableHead>Next payout</TableHead>
+                    <TableHead>Own accounts, last / next<InfoTip text="Money paid straight into a group's or year group's own account instead of the institution's. It is collected money, but not part of the institution's payout." /></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payoutForecast.institutions.length === 0 && <TableEmpty title="No institutions yet" colSpan={3} />}
+                  {payoutForecast.institutions.length === 0 && <TableEmpty title="No institutions yet" colSpan={4} />}
                   {payoutForecast.institutions.map((f) => (
                     <TableRow key={f.institutionId}>
                       <TableCell className="font-semibold">
@@ -178,6 +180,9 @@ export default function BillingPage() {
                       </TableCell>
                       <TableCell className="tabular-nums">{formatCurrency(f.lastPayout.amount, "GHS")}</TableCell>
                       <TableCell className="tabular-nums">{formatCurrency(f.nextPayout.amount, "GHS")}</TableCell>
+                      <TableCell className="tabular-nums text-muted-foreground">
+                        {formatCurrency(f.lastOtherAccounts?.amount ?? 0, "GHS")} / {formatCurrency(f.nextOtherAccounts?.amount ?? 0, "GHS")}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

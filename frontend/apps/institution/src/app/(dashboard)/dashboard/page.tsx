@@ -105,7 +105,7 @@ export default function AdminDashboardPage() {
   const jobsOn = features.enabled("Jobs");
   const storeOn = features.enabled("Store");
   const servicesOn = features.enabled("Services");
-  const moneyOn = contributionsOn || storeOn || servicesOn;
+  const moneyOn = contributionsOn || storeOn || servicesOn || eventsOn;
   const results = useQueries({
     queries: [
       { queryKey: ["dash-members-total"], queryFn: () => getMembers({ pageSize: 1 }) },
@@ -154,11 +154,13 @@ export default function AdminDashboardPage() {
     ...(contributionsOn && { Contributions: m.contributions }),
     ...(storeOn && { Store: m.store }),
     ...(servicesOn && { Services: m.services }),
+    ...(eventsOn && { Tickets: m.tickets ?? 0 }),
   }));
   const trendSeries = [
     contributionsOn && { key: "Contributions", label: "Contributions", color: "var(--brand-primary-500, var(--primary))" },
     storeOn && { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
     servicesOn && { key: "Services", label: "Services", color: "var(--chart-3, #f59e0b)" },
+    eventsOn && { key: "Tickets", label: "Event tickets", color: "var(--chart-4, #6366f1)" },
   ].filter((x): x is { key: string; label: string; color: string } => Boolean(x));
   const trendSources = trendSeries.map((x) => x.label).join(" + ");
   const statusCounts = revenueTrend.data?.statusCounts ?? {};

@@ -934,7 +934,8 @@ export async function getReportSummary() {
   return res.data.data!;
 }
 
-export interface RevenueTrendMonth { year: number; month: number; contributions: number; store: number; services: number }
+/** One month's money by source. Tickets are paid event tickets, whichever account they were paid into. */
+export interface RevenueTrendMonth { year: number; month: number; contributions: number; store: number; services: number; tickets?: number }
 export interface RevenueTrend {
   /** The latest calendar months, oldest first, current month last. Empty months are included as zeros. */
   months: RevenueTrendMonth[];

@@ -60,9 +60,10 @@ export default function AnalyticsPage() {
     contributionsOn && { key: "Contributions", label: "Fundraisers and dues", color: PRIMARY },
     features.enabled("Store") && { key: "Store", label: "Store", color: ACCENT },
     features.enabled("Services") && { key: "Services", label: "Services", color: "var(--chart-3, #f59e0b)" },
+    features.enabled("Events") && { key: "Tickets", label: "Event tickets", color: "var(--chart-4, #6366f1)" },
   ].filter((s): s is { key: string; label: string; color: string } => Boolean(s));
   const moneyMonths: Record<string, string | number>[] = (money?.months ?? []).map((m) => ({
-    month: monthLabel(m.year, m.month), Contributions: m.contributions, Store: m.store, Services: m.services,
+    month: monthLabel(m.year, m.month), Contributions: m.contributions, Store: m.store, Services: m.services, Tickets: m.tickets ?? 0,
   }));
   const moneyDifference = money ? money.thisYear - money.lastYearToDate : 0;
 

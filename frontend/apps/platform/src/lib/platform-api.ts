@@ -313,6 +313,8 @@ export interface InstitutionRevenue {
   platformFeeTotal: number;
   netToInstitution: number;
   confirmedPaymentCount: number;
+  /** Where the collected money was paid into: the institution's own account, then each group or year group with an account of its own. Adds up to grossCollected. */
+  byAccount?: { name: string; isMain: boolean; amount: number; count: number }[] | null;
 }
 
 export async function getInstitutionRevenue(id: string) {
@@ -334,10 +336,13 @@ export interface InstitutionPayoutForecast {
   payoutsConfigured: boolean;
   lastPayout: PayoutWindow;
   nextPayout: PayoutWindow;
+  /** Money in the same windows paid straight into a group's or year group's own account. Not part of the payouts above. */
+  lastOtherAccounts?: PayoutWindow | null;
+  nextOtherAccounts?: PayoutWindow | null;
 }
 
 export interface PlatformPayoutForecast {
-  totals: { lastPayout: PayoutWindow; nextPayout: PayoutWindow };
+  totals: { lastPayout: PayoutWindow; nextPayout: PayoutWindow; lastOtherAccounts?: PayoutWindow | null; nextOtherAccounts?: PayoutWindow | null };
   institutions: InstitutionPayoutForecast[];
 }
 
@@ -441,6 +446,8 @@ export interface PlatformPayment {
   gatewayFeeAmount: number;
   /** What the platform actually earned on this payment: the figure the dashboard and the institution totals add up. */
   platformEarnedAmount: number;
+  /** The group or year group account this payment was paid into. Null when it went to the institution's own account. */
+  accountName?: string | null;
 }
 
 export async function getInstitutionPayments(id: string, page = 1, pageSize = 20, status?: string, source?: string) {

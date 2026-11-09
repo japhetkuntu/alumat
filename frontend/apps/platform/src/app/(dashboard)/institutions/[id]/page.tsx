@@ -1246,6 +1246,23 @@ export default function InstitutionDetailPage() {
                   </div>
                 </div>
                 <p className="text-[12px] text-muted-foreground mt-3">{(revenue?.confirmedPaymentCount ?? 0).toLocaleString()} successful payments</p>
+                {/* Where the money was paid into. Group and year group accounts are part of the totals above, listed here so none of it is invisible. */}
+                {revenue?.byAccount && revenue.byAccount.length > 0 && (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Paid into</p>
+                    <ul className="mt-2 divide-y divide-border">
+                      {revenue.byAccount.map((a) => (
+                        <li key={a.name} className="flex items-center justify-between gap-4 py-2 text-[13px]">
+                          <span className="min-w-0 truncate">{a.name}{!a.isMain && <span className="text-muted-foreground"> · own account</span>}</span>
+                          <span className="shrink-0 text-right">
+                            <span className="font-semibold tabular-nums">{formatCurrency(a.amount, "GHS")}</span>
+                            <span className="ml-2 text-[12px] text-muted-foreground">{a.count.toLocaleString()} {a.count === 1 ? "payment" : "payments"}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1370,6 +1387,7 @@ export default function InstitutionDetailPage() {
                         <th className="px-5 py-2.5 font-semibold">Payer</th>
                         <th className="px-5 py-2.5 font-semibold">Description</th>
                         <th className="px-5 py-2.5 font-semibold">Source</th>
+                        <th className="px-5 py-2.5 font-semibold">Paid into</th>
                         <th className="px-5 py-2.5 font-semibold">Amount</th>
                         <th className="px-5 py-2.5 font-semibold">Platform earned</th>
                         <th className="px-5 py-2.5 font-semibold">Provider fee</th>
@@ -1390,6 +1408,7 @@ export default function InstitutionDetailPage() {
                           </td>
                           <td className="px-5 py-3">{p.description}</td>
                           <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : p.source === "StoreOrder" ? "Store order" : p.source === "EventTicket" ? "Event ticket" : "Service request"}</td>
+                          <td className="px-5 py-3 text-muted-foreground">{p.accountName ?? "Main account"}</td>
                           <td className="px-5 py-3 font-semibold">{formatCurrency(p.amount, "GHS")}</td>
                           <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.platformEarnedAmount, "GHS")}</td>
                           <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.gatewayFeeAmount, "GHS")}</td>
