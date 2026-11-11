@@ -170,6 +170,26 @@ public class Institution : BaseEntity
     /// </summary>
     public List<string> DisabledFeatures { get; set; } = [];
 
+    // ── Featured on the AlumUnion website ────────────────────────────────────
+    // Platform staff choose which institutions the public marketing site shows as real examples of who uses AlumUnion, and which of
+    // that institution's numbers it may show. Nothing here is shown unless FeaturedOnWebsite is on; the numbers themselves are always
+    // counted live from the institution's own data, never typed in.
+
+    /// <summary>Shown on the AlumUnion marketing site, with the institution's agreement.</summary>
+    public bool FeaturedOnWebsite { get; set; }
+
+    /// <summary>One line, written by platform staff, saying what the institution does with AlumUnion. Optional.</summary>
+    public string? FeaturedBlurb { get; set; }
+
+    /// <summary>Lower numbers are shown first.</summary>
+    public int FeaturedOrder { get; set; }
+
+    /// <summary>Which numbers may be shown: see <see cref="FeaturedStatKeys"/>. Empty means the name and logo only.</summary>
+    public List<string> FeaturedStats { get; set; } = [];
+
+    public DateTime? FeaturedAt { get; set; }
+    public string? FeaturedBy { get; set; }
+
     /// <summary>
     /// "Why alumni join" cards on the Member Portal's public landing page.
     /// Empty by default — the frontend falls back to generic built-in copy
@@ -361,4 +381,14 @@ public class InstitutionPayoutPendingChanges
     public string? SettlementBankName { get; set; }
     public string? SettlementAccountNumber { get; set; }
     public string? SettlementAccountName { get; set; }
+}
+
+/// <summary>The numbers an institution may agree to have shown on the AlumUnion website.</summary>
+public static class FeaturedStatKeys
+{
+    public const string Members = "members";
+    public const string Groups = "groups";
+    public const string Events = "events";
+    public const string Raised = "raised";
+    public static readonly string[] All = [Members, Groups, Events, Raised];
 }

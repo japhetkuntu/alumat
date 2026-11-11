@@ -112,7 +112,7 @@ export default function CommunitiesPage() {
 
   const joinMut = useMutation({
     mutationFn: (id: string) => joinCommunity(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-communities"] }); toast.success("Join request sent. A group leader will review it"); },
+    onSuccess: (res) => { qc.invalidateQueries({ queryKey: ["m-communities"] }); toast.success(res?.message === "You're in" ? "You're in!" : "Join request sent. A group leader will review it"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 

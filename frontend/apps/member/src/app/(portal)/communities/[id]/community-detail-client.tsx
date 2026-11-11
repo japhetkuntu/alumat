@@ -165,11 +165,11 @@ export default function CommunityDetailPage() {
 
   const joinMut = useMutation({
     mutationFn: () => joinCommunity(id),
-    onSuccess: () => {
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["m-community", id] });
       // Communities list shows each card's myStatus/myRole badge too.
       qc.invalidateQueries({ queryKey: ["m-communities"] });
-      toast.success("Join request sent");
+      toast.success(res?.message === "You're in" ? "You're in!" : "Join request sent");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });

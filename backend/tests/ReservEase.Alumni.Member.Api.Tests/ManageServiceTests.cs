@@ -174,6 +174,43 @@ public class ManageServiceTests
         Assert.Equal((1, 1, 0, 0), (esi["Class of 2015"], esi["Accra Chapter"], esi["Class of 2016"], esi["Kumasi Chapter"]));
     }
 
+    // ── Letting people in automatically ──────────────────────────────────────
+
+    [Fact]
+    public async Task A_leader_who_approves_members_can_switch_a_group_to_let_everyone_in_and_back()
+    {
+        var rig = await Seeded();
+        Assert.False((await rig.Service().GetGroupsAsync("esi")).Data!.Single(g => g.ScopeId == "c1").AutoApproveMembers);
+
+        Assert.Equal(200, (await rig.Service().SetAutoApproveAsync("esi", "Community", "c1", true)).Code);
+        Assert.True((await rig.Service().GetGroupsAsync("esi")).Data!.Single(g => g.ScopeId == "c1").AutoApproveMembers);
+        Assert.Contains(rig.Db().Set<InstitutionAuditLogEntry>(), e => e.Action == "Group Auto-Approval On");
+
+        await rig.Service().SetAutoApproveAsync("esi", "Community", "c1", false);
+        Assert.False((await rig.Service().GetGroupsAsync("esi")).Data!.Single(g => g.ScopeId == "c1").AutoApproveMembers);
+    }
+
+    [Fact]
+    public async Task Only_a_leader_whose_role_includes_approving_members_may_change_it_or_even_see_it()
+    {
+        var rig = await Seeded();
+
+        // kojo messages and reports for c1 but does not approve; eli leads c2 only; ama approves a year group.
+        Assert.Equal(403, (await rig.Service().SetAutoApproveAsync("kojo", "Community", "c1", true)).Code);
+        Assert.Equal(403, (await rig.Service().SetAutoApproveAsync("eli", "Community", "c1", true)).Code);
+        Assert.False((await rig.Db().Set<Community>().FindAsync("c1"))!.AutoApproveMembers);
+        Assert.Null((await rig.Service().GetGroupsAsync("kojo")).Data!.Single().AutoApproveMembers);
+    }
+
+    [Fact]
+    public async Task A_year_group_has_no_such_switch_because_its_registrations_stay_with_the_administrators()
+    {
+        var rig = await Seeded();
+
+        Assert.Equal(400, (await rig.Service().SetAutoApproveAsync("ama", "Batch", "b2015", true)).Code);
+        Assert.Null((await rig.Service().GetGroupsAsync("ama")).Data!.Single().AutoApproveMembers);
+    }
+
     // ── Report ───────────────────────────────────────────────────────────────
 
     [Fact]

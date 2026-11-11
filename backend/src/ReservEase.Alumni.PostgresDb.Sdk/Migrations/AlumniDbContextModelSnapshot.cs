@@ -877,6 +877,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<bool>("AutoApproveMembers")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("CoverImageUrl")
                         .HasColumnType("text");
 
@@ -4601,6 +4604,25 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<bool>("EmailNotificationsEnabled")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("FeaturedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FeaturedBlurb")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FeaturedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("FeaturedOnWebsite")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("FeaturedOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FeaturedStats")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("GraduationYearMode")
                         .IsRequired()
                         .HasColumnType("text");
@@ -4793,6 +4815,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("CustomDomain")
                         .IsUnique();
+
+                    b.HasIndex("FeaturedOnWebsite");
 
                     b.HasIndex("OwnerStaffId");
 

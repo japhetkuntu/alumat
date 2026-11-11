@@ -44,6 +44,13 @@ public class ManageController(IManageService manageService, IManageContentServic
     public async Task<IActionResult> Decide(string scopeType, string scopeId, string memberId, [FromBody] DecideRequest request)
         => (await manageService.DecideAsync(User.GetAccount().Id, scopeType, scopeId, memberId, request.Approve)).ToActionResult();
 
+    [HttpPut("groups/{scopeType}/{scopeId}/auto-approve")]
+    [SwaggerOperation(Summary = "Let in everyone who asks to join a group, or go back to approving each request")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> SetAutoApprove(string scopeType, string scopeId, [FromBody] SetAutoApproveRequest request)
+        => (await manageService.SetAutoApproveAsync(User.GetAccount().Id, scopeType, scopeId, request.AutoApproveMembers)).ToActionResult();
+
     [HttpPost("groups/{scopeType}/{scopeId}/message")]
     [SwaggerOperation(Summary = "Message everyone in a group")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<GroupMessageResult>))]

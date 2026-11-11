@@ -1499,3 +1499,40 @@ export async function getInstitutionHealth(): Promise<InstitutionHealth> {
   return res.data.data!;
 }
 
+
+
+// ─── Website showcase ──────────────────────────────────────────────────────
+
+export type ShowcaseStat = "members" | "groups" | "events" | "raised";
+
+/** One institution as the website showcase sees it: how it is set up, and the numbers that would be shown, counted live. */
+export interface ShowcaseEntry {
+  institutionId: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  tagline: string | null;
+  status: string;
+  organizationType: string;
+  portalUrl: string | null;
+  featured: boolean;
+  blurb: string | null;
+  order: number;
+  stats: ShowcaseStat[];
+  featuredAt: string | null;
+  featuredBy: string | null;
+  numbers: { members: number; groups: number; events: number; raised: number };
+}
+
+export async function getShowcase(): Promise<ShowcaseEntry[]> {
+  const res = await platformClient.get<ApiResponse<ShowcaseEntry[]>>("/showcase");
+  return res.data.data ?? [];
+}
+
+export async function saveShowcase(
+  institutionId: string,
+  body: { featured: boolean; blurb: string | null; order: number; stats: ShowcaseStat[]; permissionConfirmed: boolean },
+): Promise<ShowcaseEntry> {
+  const res = await platformClient.put<ApiResponse<ShowcaseEntry>>(`/showcase/${encodeURIComponent(institutionId)}`, body);
+  return res.data.data!;
+}

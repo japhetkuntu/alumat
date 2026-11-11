@@ -92,7 +92,9 @@ public class ManageService(
 
             return found.OrderBy(kv => kv.Value.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(kv => new ManageGroupDto(kv.Key.Item1, kv.Key.Item2, kv.Value.Name, kv.Value.Roles.Order().ToList(),
-                    LeadershipPrivileges.All.Select(p => p.Key).Where(kv.Value.Privileges.Contains).ToList(), Waiting(kv.Key)))
+                    LeadershipPrivileges.All.Select(p => p.Key).Where(kv.Value.Privileges.Contains).ToList(), Waiting(kv.Key),
+                    // Only a group, and only for a leader who approves members, has this to switch.
+                    kv.Key.Item1 == LeadershipPost.ScopeCommunity && approves.Contains(kv.Key) && communities.TryGetValue(kv.Key.Item2, out var cm) ? cm.AutoApproveMembers : null))
                 .ToList().ToOkApiResponse();
         }
         catch (Exception e)
@@ -162,6 +164,34 @@ public class ManageService(
         {
             logger.LogError(e, "Error listing group members {ScopeType}/{ScopeId}", scopeType, scopeId);
             return ApiResponseExtensions.ToServerErrorApiResponse<List<GroupMemberDto>>("Failed to load the members");
+        }
+    }
+
+    /// <summary>A group's leaders choose whether new requests to join are approved on the spot. Groups only: a year group's registrations stay with the administrators.</summary>
+    public async Task<IApiResponse<object>> SetAutoApproveAsync(string memberId, string scopeType, string scopeId, bool enabled)
+    {
+        try
+        {
+            var (group, refusal) = await GuardAsync<object>(memberId, LeadershipPrivileges.ManageMembers, scopeType, scopeId);
+            if (refusal is not null) return refusal;
+            if (group!.Community is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Only groups can approve requests automatically");
+
+            var community = await communityRepo.GetByIdAsync(group.Id);
+            if (community is null) return ApiResponseExtensions.ToNotFoundApiResponse<object>("Group not found");
+            if (community.AutoApproveMembers == enabled) return new object().ToOkApiResponse("Saved");
+
+            community.AutoApproveMembers = enabled;
+            community.UpdatedAt = DateTime.UtcNow;
+            community.UpdatedBy = memberId;
+            await communityRepo.UpdateAsync(community);
+            await AuditAsync(memberId, enabled ? "Group Auto-Approval On" : "Group Auto-Approval Off", group.Name);
+            return new object().ToOkApiResponse("Saved");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error setting auto-approval for {ScopeType}/{ScopeId}", scopeType, scopeId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to save the setting");
         }
     }
 

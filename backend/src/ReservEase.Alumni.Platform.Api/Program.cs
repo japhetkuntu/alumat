@@ -73,6 +73,8 @@ builder.Services.AddScoped<IPlatformMemberService, PlatformMemberService>();
 builder.Services.AddScoped<IPlatformBroadcastService, PlatformBroadcastService>();
 builder.Services.AddScoped<IMarketingCampaignService, MarketingCampaignService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Services.ShowcaseStatsReader>();
+builder.Services.AddScoped<IShowcaseService, ShowcaseService>();
 builder.Services.AddScoped<IInstitutionHealthService, InstitutionHealthService>();
 builder.Services.AddScoped<IBatchPayoutService, BatchPayoutService>();
 builder.Services.AddScoped<IGroupPayoutService, GroupPayoutService>();

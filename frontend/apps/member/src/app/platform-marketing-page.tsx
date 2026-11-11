@@ -6,8 +6,10 @@ import { useState } from "react";
 import type { IconType as LucideIcon } from "@alumni/ui";
 import { Menu, X, ArrowRight, ChevronRight, ChevronDown, Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell, FileText, Images, Building2, ShieldCheck, Layer, Mail, MessageCircleOff, SearchX, ShieldAlert, UserX, Wallet, PartyPopper, Crown, UserCheck, Upload, BookOpen, Megaphone, Users2, Stamp, Receipt, UsersRound, HandCoins, Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
+import type { Showcase, ShowcaseInstitution } from "@/lib/showcase";
 import { MarketingFooter } from "./_marketing/footer";
 import { ProductTour } from "./_marketing/product-tour";
+import { CountUp } from "./_marketing/count-up";
 import { WalkthroughForm } from "./_marketing/walkthrough-form";
 import { FAQS } from "./_marketing/faqs";
 import { INSTITUTION_AGREEMENT_VERSION } from "@alumni/ui";
@@ -185,6 +187,67 @@ function StoryPhoto({ photo, className = "", priority = false }: { photo?: Story
       <img src={photo.url} alt={photo.alt} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} />
       <div className="mk-story-photo-overlay" aria-hidden="true" />
     </figure>
+  );
+}
+
+/** Names the real institutions already using it, right where a visitor decides whether to keep reading. */
+function HeroProof({ institutions }: { institutions: ShowcaseInstitution[] }) {
+  const names = institutions.slice(0, 3).map((i) => i.name);
+  const more = institutions.length - names.length;
+  const list = more > 0 ? `${names.join(", ")} and ${more} more` : names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
+  return (
+    <p className="mk-hero-proof"><a href="#institutions">Already used by {list} <ArrowRight size={14} /></a></p>
+  );
+}
+
+const compact = new Intl.NumberFormat("en-GH", { notation: "compact", maximumFractionDigits: 1 });
+
+/** Real institutions, with only the numbers each agreed to show, counted from their own data. Left out entirely when none are featured. */
+function ShowcaseSection({ showcase }: { showcase: Showcase }) {
+  const { institutions, totals } = showcase;
+  const summary = [
+    totals.members > 0 && `${totals.members.toLocaleString("en-GH")} ${totals.members === 1 ? "member" : "members"}`,
+    totals.groups > 0 && `${totals.groups.toLocaleString("en-GH")} ${totals.groups === 1 ? "group" : "groups"}`,
+    totals.events > 0 && `${totals.events.toLocaleString("en-GH")} ${totals.events === 1 ? "event" : "events"} held`,
+  ].filter(Boolean) as string[];
+  return (
+    <section id="institutions" className="mk-wrap mk-showcase" aria-labelledby="showcase-title">
+      <div className="mk-showcase-head">
+        <h2 id="showcase-title">{institutions.length === 1 ? "Already running on AlumUnion." : "Institutions already running on AlumUnion."}</h2>
+        {summary.length > 0 && <p>{institutions.length > 1 ? `Between them: ${summary.join(", ")}.` : `${summary.join(", ")}.`}</p>}
+      </div>
+      <ul className="mk-showcase-list">
+        {institutions.map((inst) => {
+          const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+          const figures = [
+            inst.members ? { n: inst.members, label: plural(inst.members, "member", "members"), format: (n: number) => n.toLocaleString("en-GH") } : null,
+            inst.groups ? { n: inst.groups, label: plural(inst.groups, "group", "groups"), format: (n: number) => n.toLocaleString("en-GH") } : null,
+            inst.events ? { n: inst.events, label: plural(inst.events, "event held", "events held"), format: (n: number) => n.toLocaleString("en-GH") } : null,
+            inst.raised ? { n: inst.raised, label: "raised", format: (n: number) => `GH₵${compact.format(n)}` } : null,
+          ].filter((f): f is { n: number; label: string; format: (n: number) => string } => f !== null);
+          const brand = inst.primaryColor && /^#[0-9a-f]{6}$/i.test(inst.primaryColor) ? inst.primaryColor : null;
+          return (
+            <li key={inst.slug} className="mk-showcase-item">
+              <div className="mk-showcase-id">
+                {inst.logoUrl
+                  ? <img className="mk-showcase-logo" src={inst.logoUrl} alt="" width={56} height={56} loading="lazy" />
+                  : <span className="mk-showcase-logo mk-showcase-initials" aria-hidden style={brand ? ({ "--brand": brand } as React.CSSProperties) : undefined}>{inst.name.slice(0, 2).toUpperCase()}</span>}
+                <div>
+                  <h3>{inst.name}</h3>
+                  {inst.blurb && <p>{inst.blurb}</p>}
+                </div>
+              </div>
+              {figures.length > 0 && (
+                <dl className="mk-showcase-figures">
+                  {figures.map((f) => <div key={f.label}><dt>{f.label}</dt><dd><CountUp value={f.n} format={f.format} /></dd></div>)}
+                </dl>
+              )}
+              {inst.portalUrl && <a className="mk-text-link mk-showcase-link" href={inst.portalUrl} target="_blank" rel="noopener">See {inst.name}’s portal <ArrowRight size={14} /><span className="sr-only"> (opens in a new tab)</span></a>}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -462,7 +525,7 @@ function OnboardingForm() {
    PAGE
    ───────────────────────────────────────────────────────────────────────── */
 
-export default function PlatformMarketingPage() {
+export default function PlatformMarketingPage({ showcase = null }: { showcase?: Showcase | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [enquiry, setEnquiry] = useState<"onboarding" | "walkthrough">("onboarding");
   return (
@@ -482,10 +545,12 @@ export default function PlatformMarketingPage() {
             <div className="mk-hero-copy"><h1>Give your community a home, <span>at no cost</span> to your institution.</h1>
             <p className="mk-hero-description">AlumUnion helps institutions build, organize, and grow thriving communities of any kind: associations, clubs, congregations, schools, professional bodies and more.</p>
             <div className="mk-hero-actions"><a href="#onboard" className="mk-button mk-button-large">Build my community <ArrowRight size={17} /></a><a href="#product" className="mk-text-link">See the member experience <ChevronDown size={14} /></a></div>
-            <p className="mk-hero-assurances"><span>Free for your institution</span><span>We handle setup</span><span>Your branding, your community</span></p></div>
+            <p className="mk-hero-assurances"><span>Free for your institution</span><span>We handle setup</span><span>Your branding, your community</span></p>
+            {showcase && <HeroProof institutions={showcase.institutions} />}</div>
             <StoryPhoto photo={STORY_PHOTOS.hero} className="mk-hero-photo" priority />
           </div>
         </section>
+        {showcase && <ShowcaseSection showcase={showcase} />}
         <section id="product" className="mk-wrap mk-product-section">
           <div className="mk-product-heading"><div><h2>See what your community actually gets.</h2></div></div>
           <div className="mk-product-frame"><ProductTour /></div>

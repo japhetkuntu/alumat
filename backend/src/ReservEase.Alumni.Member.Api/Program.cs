@@ -51,6 +51,7 @@ builder.Services.Configure<WebPushConfig>(
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Services.ShowcaseStatsReader>();
 
 // Data + cache + external services
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");

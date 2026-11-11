@@ -4,6 +4,7 @@ import LandingPage from "./landing-page";
 import { WebsitePage } from "./_site/website-page";
 import { brandFromTheme, getPublishedSite, getSiteData } from "@/lib/site";
 import PlatformMarketingPage from "./platform-marketing-page";
+import { getShowcase } from "@/lib/showcase";
 import { FAQS } from "./_marketing/faqs";
 import { getRequestOrigin, MARKETING_DESCRIPTION, MARKETING_KEYWORDS, MARKETING_TITLE, SITE_NAME } from "@/lib/seo";
 
@@ -132,10 +133,11 @@ export default async function RootPage() {
 
 var state = process.env.NODE_ENV === "development"? true: status === "not-found" || status === "error"
   if (state) {
+    const showcase = await getShowcase();
     return (
       <>
         <StructuredData isMarketing theme={theme} origin={origin} />
-        <PlatformMarketingPage />
+        <PlatformMarketingPage showcase={showcase} />
       </>
     );
   }

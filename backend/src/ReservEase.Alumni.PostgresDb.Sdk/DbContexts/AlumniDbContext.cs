@@ -663,6 +663,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Institution>().HasIndex(i => i.Status);
         modelBuilder.Entity<Institution>().Property(i => i.DisabledFeatures).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        modelBuilder.Entity<Institution>().Property(i => i.FeaturedStats).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        modelBuilder.Entity<Institution>().HasIndex(i => i.FeaturedOnWebsite);
         modelBuilder.Entity<Institution>().Property(i => i.ProgramsOfStudy).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<AlumniEvent>().Property(e => e.PriceOptions).HasColumnType("jsonb")

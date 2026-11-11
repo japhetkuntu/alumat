@@ -82,4 +82,34 @@ public class CommunityInviteTests
 
         Assert.Equal(404, (await rig.Service.GetInviteInfoAsync("c1", "x")).Code);
     }
+
+    [Fact]
+    public async Task Asking_to_join_waits_for_a_leader_unless_the_group_lets_everyone_in()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person("a"), Person("b"), Group(), new Community { Id = "c2", Name = "Open chapter", AutoApproveMembers = true });
+
+        var closed = await rig.Service.JoinAsync("c1", "a");
+        var open = await rig.Service.JoinAsync("c2", "b");
+
+        Assert.Equal("Join request submitted", closed.Message);
+        Assert.Equal("You're in", open.Message);
+        var db = rig.Db();
+        Assert.Equal("Pending", db.Set<CommunityMembership>().Single(m => m.MemberId == "a").Status);
+        var inside = db.Set<CommunityMembership>().Single(m => m.MemberId == "b");
+        Assert.Equal(("Approved", "auto"), (inside.Status, inside.DecidedBy));
+        Assert.NotNull(inside.DecidedAt);
+    }
+
+    [Fact]
+    public async Task Someone_turned_away_earlier_is_let_straight_back_in_once_the_group_lets_everyone_in()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person("a"), new Community { Id = "c1", Name = "Open chapter", AutoApproveMembers = true }, Link("a", status: "Rejected"));
+
+        var r = await rig.Service.JoinAsync("c1", "a");
+
+        Assert.Equal("You're in", r.Message);
+        Assert.Equal("Approved", rig.Db().Set<CommunityMembership>().Single().Status);
+    }
 }

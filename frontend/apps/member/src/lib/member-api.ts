@@ -1434,6 +1434,8 @@ export interface ManageGroup {
   privileges: string[];
   /** How many people are waiting for this leader to approve them. */
   pendingCount: number;
+  /** Groups only, and only for a leader who approves members: whether anyone who asks to join is let in at once. Absent otherwise. */
+  autoApproveMembers?: boolean | null;
 }
 
 export interface GroupSummary {
@@ -1493,6 +1495,10 @@ export async function getGroupMembers(g: Pick<ManageGroup, "scopeType" | "scopeI
 
 export async function decideJoinRequest(g: Pick<ManageGroup, "scopeType" | "scopeId">, memberId: string, approve: boolean): Promise<void> {
   await memberClient.post(`${groupPath(g)}/members/${memberId}/decision`, { approve });
+}
+
+export async function setGroupAutoApprove(g: Pick<ManageGroup, "scopeType" | "scopeId">, autoApproveMembers: boolean): Promise<void> {
+  await memberClient.put(`${groupPath(g)}/auto-approve`, { autoApproveMembers });
 }
 
 export async function messageGroup(g: Pick<ManageGroup, "scopeType" | "scopeId">, text: string, channels: ("Email" | "Sms")[] = []): Promise<{ recipients: number }> {

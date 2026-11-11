@@ -140,14 +140,15 @@ public class MemberAuthService(
 
         var referrerMembership = await communityMembershipRepo.GetOneAsync(m => m.CommunityId == community.Id && m.MemberId == referrerId);
         var vouched = referrerMembership is { Status: "Approved", Role: "Leader" };
+        var letIn = vouched || community.AutoApproveMembers;
         await communityMembershipRepo.AddAsync(new CommunityMembership
         {
             CommunityId = community.Id,
             MemberId = member.Id,
-            Status = vouched ? "Approved" : "Pending",
+            Status = letIn ? "Approved" : "Pending",
             Role = "Member",
-            DecidedAt = vouched ? DateTime.UtcNow : null,
-            DecidedBy = vouched ? referrerId : null,
+            DecidedAt = letIn ? DateTime.UtcNow : null,
+            DecidedBy = vouched ? referrerId : letIn ? "auto" : null,
             CreatedBy = "invite",
         });
     }

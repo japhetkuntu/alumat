@@ -5,7 +5,10 @@ namespace ReservEase.Alumni.Member.Api.Models;
 
 /// <summary>A year group or community the signed-in member may act on, with the roles that give them that and what they may do there.</summary>
 /// <param name="PendingCount">How many people are waiting for this leader to approve them; 0 when the roles don't include approving.</param>
-public record ManageGroupDto(string ScopeType, string ScopeId, string Name, List<string> RoleNames, List<string> Privileges, int PendingCount = 0);
+public record ManageGroupDto(string ScopeType, string ScopeId, string Name, List<string> RoleNames, List<string> Privileges, int PendingCount = 0, bool? AutoApproveMembers = null);
+
+/// <param name="AutoApproveMembers">Whether anyone who asks to join is let in without waiting for a leader.</param>
+public record SetAutoApproveRequest(bool AutoApproveMembers);
 
 public record GroupSummaryDto(
     string Name, int TotalMembers, int NewLast30Days, int ActiveLast30Days, int ProfileCompletionPercent, int PendingRequests);

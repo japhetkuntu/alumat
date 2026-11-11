@@ -12,6 +12,7 @@ public interface IManageService
     Task<IApiResponse<List<ManageGroupDto>>> GetGroupsAsync(string memberId);
     Task<IApiResponse<GroupSummaryDto>> GetSummaryAsync(string memberId, string scopeType, string scopeId);
     Task<IApiResponse<List<GroupMemberDto>>> GetMembersAsync(string memberId, string scopeType, string scopeId);
+    Task<IApiResponse<object>> SetAutoApproveAsync(string memberId, string scopeType, string scopeId, bool enabled);
     Task<IApiResponse<object>> DecideAsync(string memberId, string scopeType, string scopeId, string targetMemberId, bool approve);
 
     Task<IApiResponse<GroupPeopleCountsDto>> GetPeopleCountsAsync(string memberId, string scopeType, string scopeId);

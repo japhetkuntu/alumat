@@ -132,6 +132,9 @@ public class CommunityService(
         }
     }
 
+    /// <summary>Recorded as who decided when a group's own setting let the person in, so it is never mistaken for a leader's decision.</summary>
+    public const string AutoApproved = "auto";
+
     public async Task<IApiResponse<object>> JoinAsync(string id, string memberId)
     {
         try
@@ -146,15 +149,15 @@ public class CommunityService(
                 if (existing.Status is "Pending" or "Approved")
                     return ApiResponseExtensions.ToConflictApiResponse<object>($"You already have a {existing.Status.ToLower()} request for this community");
 
-                // Re-requesting after a rejection — reset to Pending.
-                existing.Status = "Pending";
+                // Re-requesting after a rejection — back to Pending, or straight in when the group lets everyone in.
+                existing.Status = community.AutoApproveMembers ? "Approved" : "Pending";
                 existing.RequestedAt = DateTime.UtcNow;
-                existing.DecidedAt = null;
-                existing.DecidedBy = null;
+                existing.DecidedAt = community.AutoApproveMembers ? DateTime.UtcNow : null;
+                existing.DecidedBy = community.AutoApproveMembers ? AutoApproved : null;
                 existing.UpdatedAt = DateTime.UtcNow;
                 existing.UpdatedBy = memberId;
                 await membershipRepo.UpdateAsync(existing);
-                return new object().ToOkApiResponse("Join request submitted");
+                return new object().ToOkApiResponse(community.AutoApproveMembers ? "You're in" : "Join request submitted");
             }
 
             var membership = new CommunityMembership
@@ -162,11 +165,14 @@ public class CommunityService(
                 CommunityId = id,
                 MemberId = memberId,
                 CreatedBy = memberId,
+                Status = community.AutoApproveMembers ? "Approved" : "Pending",
+                DecidedAt = community.AutoApproveMembers ? DateTime.UtcNow : null,
+                DecidedBy = community.AutoApproveMembers ? AutoApproved : null,
             };
             await membershipRepo.AddAsync(membership);
 
-            logger.LogInformation("Member {MemberId} requested to join community {CommunityId}", memberId, id);
-            return new object().ToCreatedApiResponse("Join request submitted");
+            logger.LogInformation("Member {MemberId} {Outcome} community {CommunityId}", memberId, community.AutoApproveMembers ? "joined" : "requested to join", id);
+            return new object().ToCreatedApiResponse(community.AutoApproveMembers ? "You're in" : "Join request submitted");
         }
         catch (Exception e)
         {

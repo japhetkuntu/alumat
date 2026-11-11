@@ -39,6 +39,9 @@ public class Community : BaseEntity, ITenantScoped
     /// <summary>The institution chose to show this in full to people who are not signed in. Off means guests see only a short preview.</summary>
     public bool IsPublic { get; set; }
 
+    /// <summary>The group's leaders chose to let in anyone who asks to join, instead of approving each request by hand.</summary>
+    public bool AutoApproveMembers { get; set; }
+
     /// <summary>
     /// What this group is called in this community: "Chapter", "Committee", "Department", "Ministry", "Team"… Free text the
     /// administrators choose, never a fixed list. Null reads as a plain "Group".

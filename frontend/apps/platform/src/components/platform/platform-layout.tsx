@@ -23,6 +23,7 @@ import {
   ScrollText,
   Sitemap,
   HandCoins,
+  Globe,
 } from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@alumni/ui";
@@ -44,6 +45,7 @@ const navItems = [
   { href: "/members", label: "Members", icon: GraduationCap },
   { href: "/onboarding-leads", label: "Onboarding & Demos", icon: Inbox },
   { href: "/marketing-campaigns", label: "Marketing Campaigns", icon: Megaphone },
+  { href: "/showcase", label: "Website showcase", icon: Globe },
   { href: "/billing", label: "Payments & Revenue", icon: CreditCard },
   { href: "/payout-accounts", label: "Payout accounts", icon: Landmark },
   { href: "/analytics", label: "Analytics", icon: TrendingUp },
@@ -68,7 +70,7 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
   const visibleNavItems = navItems.filter((item) => {
     if (isRepresentative) return REPRESENTATIVE_PAGES.includes(item.href);
     if (item.href === "/team" || item.href === "/incentives") return isSuperAdmin;
-    if (item.href === "/marketing-campaigns" && !isSuperAdmin && user?.role !== "Sales") return false;
+    if ((item.href === "/marketing-campaigns" || item.href === "/showcase") && !isSuperAdmin && user?.role !== "Sales") return false;
     if ((item.href === "/staff" || item.href === "/audit-log") && !isSuperAdmin) return false;
     if (item.href === "/members" && !isSuperAdmin && !isSupport) return false;
     if (item.href === "/activation" && user?.role === "Billing") return false;

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button, CheckOption, FormSheet, Input, Search, Textarea, UserAvatar, formatDate, formatDateTime } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { decideJoinRequest, messageGroup, type GroupMember, type ManageGroup } from "@/lib/member-api";
+import { decideJoinRequest, messageGroup, setGroupAutoApprove, type GroupMember, type ManageGroup } from "@/lib/member-api";
 import { ListState, Panel, ROW, errorText } from "@/components/member/manage-ui";
 import { manageQueries } from "@/components/member/manage-queries";
 
@@ -55,6 +55,35 @@ const MemberRow = memo(function MemberRow({ m, busy, onDecide }: { m: GroupMembe
   );
 });
 
+/** Lets the leaders of a group choose to let in anyone who asks, instead of approving each request by hand. */
+function AutoApprove({ group }: { group: ManageGroup }) {
+  const qc = useQueryClient();
+  const key = ["manage-groups"];
+  const save = useMutation({
+    mutationFn: (on: boolean) => setGroupAutoApprove(group, on),
+    onMutate: async (on) => {
+      await qc.cancelQueries({ queryKey: key });
+      const before = qc.getQueryData<ManageGroup[]>(key);
+      qc.setQueryData<ManageGroup[]>(key, (list) => (list ?? []).map((g) => g.scopeType === group.scopeType && g.scopeId === group.scopeId ? { ...g, autoApproveMembers: on } : g));
+      return { before };
+    },
+    onSuccess: (_r, on) => toast.success(on ? "New requests are approved automatically" : "You'll approve each request again"),
+    onError: (e, _on, ctx) => { qc.setQueryData(key, ctx?.before); toast.error(errorText(e) ?? "That didn't work"); },
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+  });
+  return (
+    <div className="mt-2 rounded-[16px] bg-muted/50 p-3">
+      <CheckOption
+        id="mg-auto-approve"
+        label="Approve requests to join automatically"
+        hint="Anyone who asks to join is let in at once, without waiting for you. Turn it off to approve each request yourself again."
+        checked={!!group.autoApproveMembers}
+        onChange={(on) => save.mutate(on)}
+      />
+    </div>
+  );
+}
+
 export function Members({ group }: { group: ManageGroup }) {
   const qc = useQueryClient();
   const key = manageQueries.members(group).queryKey;
@@ -90,6 +119,7 @@ export function Members({ group }: { group: ManageGroup }) {
 
   return (
     <Panel id="mg-members" title="Members" summary={data.length > 0 ? `${data.length} ${data.length === 1 ? "member" : "members"}${totalWaiting > 0 ? ` · ${totalWaiting} waiting` : ""}` : undefined}>
+      {group.autoApproveMembers != null && <AutoApprove group={group} />}
       {data.length > 8 && (
         <div className="relative mt-1">
           <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
