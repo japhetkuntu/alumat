@@ -1,0 +1,3 @@
+module.exports=[26860,a=>{"use strict";var b=a.i(70249);let c="AlumUnion Founding 20 | "+b.SITE_NAME,d="We're partnering with 20 institutions and organized communities in Ghana to build stronger, more connected digital communities. No setup cost. Applications close October 30, 2026.";async function e(){let a=await (0,b.getRequestOrigin)(),e=`${a}/founding20`;return{title:{absolute:c},description:d,alternates:{canonical:e},openGraph:{title:c,description:d,url:e,type:"website"},twitter:{card:"summary_large_image",title:c,description:d}}}function f({children:a}){return a}a.s(["default",()=>f,"generateMetadata",()=>e])}];
+
+//# sourceMappingURL=apps_member_src_app_founding20_layout_tsx_7ebd58e6._.js.map

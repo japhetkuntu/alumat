@@ -1,0 +1,3 @@
+{
+  "/(portal)/forum/[id]/page": "app/(portal)/forum/[id]/page.js"
+}

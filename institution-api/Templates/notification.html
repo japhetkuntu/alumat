@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <title>{{title}}</title>
+  <!--[if !mso]><!-->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!--<![endif]-->
+  <style>
+    body { margin: 0; padding: 0; background: #f5f3ee; color: #14181f; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+    table { border-collapse: collapse; }
+    a { color: inherit; }
+    .page { width: 100%; padding: 40px 20px 48px; }
+    .email { width: 100%; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid {{brand_color_light}}; border-radius: 0; overflow: hidden; box-shadow: 0 14px 38px rgba(20,24,31,0.08); }
+    .bar { height: 6px; background: linear-gradient(90deg, {{brand_color}}, {{brand_color_dark}}); }
+    .brand-name { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: #14181f; }
+    .eyebrow-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{brand_accent_text}}; white-space: nowrap; }
+    .content { padding: 30px 40px 8px; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 16px; background: {{brand_accent_light}}; color: {{brand_accent_text_on_light}}; }
+    h1 { margin: 0 0 16px; font-size: 24px; line-height: 1.28; letter-spacing: -0.01em; color: #14181f; font-weight: 800; }
+    p { margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #4b5566; }
+    .button { display: inline-block; padding: 15px 28px; background: {{brand_color}}; color: {{brand_text_on_color}} !important; border-radius: 0; text-decoration: none; font-weight: 700; font-size: 15px; margin: 6px 0 22px; box-shadow: 0 8px 20px {{brand_color_soft}}; }
+    .footer { padding: 24px 40px 30px; background: #f5f3ee; border-top: 1px solid {{brand_color_light}}; text-align: center; }
+    .footer p { margin: 0; color: #8a93a3; font-size: 12px; line-height: 1.6; }
+    .footer strong { color: #64748b; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="email">
+      <div class="bar"></div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="padding: 26px 0 4px 40px; width: 100%;" valign="middle">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td valign="middle">{{brand_mark_html}}</td>
+            <td valign="middle" class="brand-name" style="padding-left: 10px;">{{brand_name}}</td>
+          </tr></table>
+        </td>
+        <td style="padding: 26px 40px 4px 12px; white-space: nowrap;" valign="middle" align="right" class="eyebrow-tag">Notification</td>
+      </tr></table>
+      <div class="content">
+        <span class="badge">{{badge_label}}</span>
+        <h1>{{title}}</h1>
+        <p>Hi {{first_name}},</p>
+        <p>{{body}}</p>
+        {{image_block_html}}
+        {{action_button_html}}
+      </div>
+      <div class="footer">
+        <p>{{pref_line_html}}</p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
